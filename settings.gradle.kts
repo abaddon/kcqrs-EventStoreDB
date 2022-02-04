@@ -1,0 +1,2 @@
+rootProject.name = "kcqrs-EventStoreDB"
+
