@@ -1,6 +1,6 @@
 
 group = "io.github.abaddon.kcqrs"
-version = "0.0.1-SNAPSHOT"
+version = "0.0.1"
 
 object Meta {
     const val desc = "KCQRS EventStoreDB repository library"
@@ -11,8 +11,8 @@ object Meta {
 }
 
 object Versions {
-    const val kcqrsCoreVersion = "0.0.1-SNAPSHOT"
-    const val kcqrsTestVersion = "0.0.1-SNAPSHOT"
+    const val kcqrsCoreVersion = "0.0.1"
+    const val kcqrsTestVersion = "0.0.1"
     const val eventStoreDBVersion = "1.0.0"
     const val slf4jVersion = "1.7.25"
     const val kotlinVersion = "1.6.0"
