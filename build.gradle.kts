@@ -1,6 +1,5 @@
 
 group = "io.github.abaddon.kcqrs"
-version = "0.0.2"
 
 object Meta {
     const val desc = "KCQRS EventStoreDB repository library"
@@ -14,8 +13,8 @@ object Meta {
 }
 
 object Versions {
-    const val kcqrsCoreVersion = "0.0.1"
-    const val kcqrsTestVersion = "0.0.1"
+    const val kcqrsCoreVersion = "0.0.3"
+    const val kcqrsTestVersion = "0.0.3"
     const val eventStoreDBVersion = "1.0.0"
     const val slf4jVersion = "1.7.25"
     const val kotlinVersion = "1.6.0"
@@ -25,15 +24,28 @@ object Versions {
     const val junitJupiterVersion = "5.7.0"
     const val jacocoToolVersion = "0.8.7"
     const val jvmTarget = "11"
+    const val hopliteVersion="1.4.16"
 }
 
 plugins {
     kotlin("jvm") version "1.6.0"
     id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
+    id("com.palantir.git-version") version "0.13.0"
     jacoco
     `maven-publish`
     signing
 }
+
+val versionDetails: groovy.lang.Closure<com.palantir.gradle.gitversion.VersionDetails> by extra
+val details = versionDetails()
+
+val lastTag=details.lastTag.substring(1)
+val snapshotTag= {
+    val list=lastTag.split(".")
+    val third=(list.last().toInt() + 1).toString()
+    "${list[0]}.${list[1]}.$third-SNAPSHOT"
+}
+version = if(details.isCleanTag) lastTag else snapshotTag()
 
 publishing {
     publications {
@@ -46,6 +58,13 @@ publishing {
 repositories {
     mavenCentral()
     mavenLocal()
+    maven {
+        url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+        mavenContent {
+            snapshotsOnly()
+        }
+    }
+
 }
 
 dependencies {
@@ -59,14 +78,20 @@ dependencies {
 
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:${Versions.jacksonModuleKotlinVersion}")
 
+    //Config
+    implementation("com.sksamuel.hoplite:hoplite-core:${Versions.hopliteVersion}")
+    implementation("com.sksamuel.hoplite:hoplite-yaml:${Versions.hopliteVersion}")
+
     //EventStoreDB
     implementation("com.eventstore:db-client-java:${Versions.eventStoreDBVersion}")
 
+    //Test
     testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter:${Versions.junitJupiterVersion}")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.kotlinCoroutineVersion}")
     testImplementation("org.testcontainers:testcontainers:${Versions.testContainerVersion}")
     testImplementation("org.testcontainers:junit-jupiter:${Versions.testContainerVersion}")
+    testImplementation("org.slf4j:slf4j-simple:${Versions.slf4jVersion}")
 }
 
 jacoco {
