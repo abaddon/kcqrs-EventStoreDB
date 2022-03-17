@@ -47,13 +47,6 @@ val snapshotTag= {
 }
 version = if(details.isCleanTag) lastTag else snapshotTag()
 
-publishing {
-    publications {
-        create<MavenPublication>("kcqrs-eventStoreDB") {
-            from(components["kotlin"])
-        }
-    }
-}
 
 repositories {
     mavenCentral()
@@ -139,10 +132,7 @@ signing {
 
 publishing {
     publications {
-        create<MavenPublication>("maven") {
-            groupId = project.group.toString()
-            artifactId = project.name
-            version = project.version.toString()
+        create<MavenPublication>("kcqrs-eventStoreDB") {
             from(components["kotlin"])
             artifact(tasks["sourcesJar"])
             artifact(tasks["javadocJar"])
