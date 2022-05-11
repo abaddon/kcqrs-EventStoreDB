@@ -13,14 +13,14 @@ object Meta {
 }
 
 object Versions {
-    const val kcqrsCoreVersion = "0.0.3"
+    const val kcqrsCoreVersion = "0.0.6"
     const val kcqrsTestVersion = "0.0.3"
     const val eventStoreDBVersion = "1.0.0"
     const val slf4jVersion = "1.7.25"
     const val kotlinVersion = "1.6.0"
     const val kotlinCoroutineVersion = "1.6.0"
     const val jacksonModuleKotlinVersion = "2.13.0"
-    const val testContainerVersion = "1.16.2"
+    const val testContainerVersion = "1.16.3"
     const val junitJupiterVersion = "5.7.0"
     const val jacocoToolVersion = "0.8.7"
     const val jvmTarget = "11"
