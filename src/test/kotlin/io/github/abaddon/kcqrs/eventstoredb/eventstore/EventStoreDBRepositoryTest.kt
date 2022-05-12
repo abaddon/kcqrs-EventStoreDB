@@ -1,5 +1,6 @@
 package io.github.abaddon.kcqrs.eventstoredb.eventstore
 
+import io.github.abaddon.kcqrs.core.domain.Result
 import io.github.abaddon.kcqrs.eventstoredb.config.EventStoreDBConfig
 import io.github.abaddon.kcqrs.testHelpers.WithEventStoreDBContainer
 import io.github.abaddon.kcqrs.testHelpers.entities.CounterAggregateId
@@ -37,14 +38,19 @@ internal class EventStoreDBRepositoryTest : WithEventStoreDBContainer() {
         runBlocking {
             repository.save(aggregate, UUID.randomUUID())
         }
-
-        val regeneratedAggregate = runBlocking {
+        runBlocking {
             delay(2000L)
-            return@runBlocking repository.getById(counterAggregateId)
+            when (val result = repository.getById(counterAggregateId)) {
+                is Result.Invalid -> assert(false)
+                is Result.Valid -> {
+                    val regeneratedAggregate = result.value
+                    assertEquals(counterAggregateId, regeneratedAggregate.id)
+                    assertEquals(5, regeneratedAggregate.counter)
+                }
+            }
         }
 
-        assertEquals(counterAggregateId, regeneratedAggregate.id)
-        assertEquals(5, regeneratedAggregate.counter)
+
     }
 
     @Test
@@ -52,21 +58,27 @@ internal class EventStoreDBRepositoryTest : WithEventStoreDBContainer() {
         val repository = EventStoreDBRepository(repositoryConfig) { CounterAggregateRoot(it as CounterAggregateId) }
         val counterAggregateId = CounterAggregateId()
         val aggregate = CounterAggregateRoot.initialiseCounter(counterAggregateId, 5)
-        val initialAggregate = runBlocking {
+        runBlocking {
             repository.save(aggregate, UUID.randomUUID())
             delay(2000L)
-            return@runBlocking repository.getById(counterAggregateId)
+            when (val initialAggregateResult = repository.getById(counterAggregateId)) {
+                is Result.Invalid -> assert(false)
+                is Result.Valid -> {
+                    val initialAggregate = initialAggregateResult.value
+                    val updatedAggregate = initialAggregate.increaseCounter(7)
+                    repository.save(updatedAggregate, UUID.randomUUID())
+                    delay(2000L)
+                    when (val regeneratedAggregateResult = repository.getById(counterAggregateId)) {
+                        is Result.Invalid -> assert(false)
+                        is Result.Valid -> {
+                            val regeneratedAggregate = regeneratedAggregateResult.value
+                            assertEquals(counterAggregateId, regeneratedAggregate.id)
+                            assertEquals(12, regeneratedAggregate.counter)
+                        }
+                    }
+                }
+            }
         }
-
-        val regeneratedAggregate = runBlocking {
-            val updatedAggregate = initialAggregate.increaseCounter(7)
-            repository.save(updatedAggregate, UUID.randomUUID())
-            delay(2000L)
-            return@runBlocking repository.getById(counterAggregateId)
-        }
-
-        assertEquals(counterAggregateId, regeneratedAggregate.id)
-        assertEquals(12, regeneratedAggregate.counter)
     }
 
 }
