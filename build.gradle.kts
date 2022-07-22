@@ -15,7 +15,7 @@ object Meta {
 object Versions {
     const val kcqrsCoreVersion = "0.0.7"
     const val kcqrsTestVersion = "0.0.3"
-    const val eventStoreDBVersion = "1.0.0"
+    const val eventStoreDBVersion = "3.0.1"
     const val slf4jVersion = "1.7.25"
     const val kotlinVersion = "1.6.0"
     const val kotlinCoroutineVersion = "1.6.0"
