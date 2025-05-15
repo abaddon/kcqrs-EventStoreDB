@@ -30,7 +30,7 @@ object Versions {
 plugins {
     kotlin("jvm") version "1.8.10"
     id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
-    id("com.palantir.git-version") version "0.15.0"
+    id("com.palantir.git-version") version "2.0.0"
     jacoco
     `maven-publish`
     signing
