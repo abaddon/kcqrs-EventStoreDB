@@ -36,7 +36,6 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
     }
 
     override fun load(streamName: String, startFrom: Long): List<IDomainEvent> {
-
         val eventsFound = mutableListOf<IDomainEvent>()
         var currentRevision: Long = startFrom
         do {
@@ -76,23 +75,25 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
             if (currentVersion <= 0L) ExpectedRevision.NO_STREAM else ExpectedRevision.expectedRevision(currentVersion - 1L)
         val options = AppendToStreamOptions.get()
             .expectedRevision(expectedRevision)
-        val writeResultFuture =
-            client.appendToStream(streamName, options, eventsToSave.iterator())
+        
+        // The append method has changed in EventStoreDB 4.x
+        val writeResultFuture = client.appendToStream(streamName, options, eventsToSave.iterator())
+        
         writeResultFuture.whenComplete { writeResult, error ->
             if (error == null) {
-                log.info("events published on stream $streamName, nextExpectedRevision: ${writeResult.nextExpectedRevision.valueUnsigned}")
+                log.info("Events published on stream $streamName, nextExpectedRevision: ${writeResult.nextExpectedRevision}")
             } else {
-                log.error("events not published on stream $streamName", error)
+                log.error("Events not published on stream $streamName", error)
             }
         }
     }
 
     private fun <TProjection : IProjection> subscribeEventStoreProjectionHandler(projectionHandler: EventStoreProjectionHandler<TProjection>) {
-
-        client.subscribeToAll(
-            projectionHandler,
-            projectionHandler.subscriptionFilter?.subscribeToAllOptions(projectionHandler.position)
-        )
+        // In EventStoreDB 4.x, the subscription API has been updated
+        val options = projectionHandler.subscriptionFilter?.subscribeToAllOptions(projectionHandler.position)
+            ?: SubscribeToAllOptions.get()
+        
+        client.subscribeToAll(projectionHandler, options)
     }
 
     override fun publish(events: List<IDomainEvent>) {}

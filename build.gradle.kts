@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 group = "io.github.abaddon.kcqrs"
 
@@ -5,32 +6,33 @@ object Meta {
     const val desc = "KCQRS EventStoreDB repository library"
     const val license = "Apache-2.0"
     const val githubRepo = "abaddon/kcqrs-EventStoreDB"
-    const val release = "https://s01.oss.sonatype.org/service/local/"
-    const val snapshot = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
     const val developerName = "Stefano Longhi"
     const val developerOrganization = ""
     const val organizationUrl = "https://github.com/abaddon"
 }
 
 object Versions {
-    const val kcqrsCoreVersion = "0.0.7"
-    const val kcqrsTestVersion = "0.0.3"
-    const val eventStoreDBVersion = "3.0.1"
-    const val slf4jVersion = "1.7.25"
-    const val kotlinVersion = "1.6.0"
-    const val kotlinCoroutineVersion = "1.6.0"
-    const val jacksonModuleKotlinVersion = "2.13.3"
-    const val testContainerVersion = "1.16.3"
-    const val junitJupiterVersion = "5.7.0"
-    const val jacocoToolVersion = "0.8.7"
-    const val jvmTarget = "11"
-    const val hopliteVersion="1.4.16"
+    // Update these versions only if compatibility is confirmed with your library
+    const val kcqrsCoreVersion = "0.0.10"
+    const val kcqrsTestVersion = "0.0.11"
+    
+    // Updated dependencies
+    const val eventStoreDBVersion = "4.1.0"
+    const val slf4jVersion = "2.0.12"
+    const val kotlinVersion = "2.1.21"
+    const val kotlinCoroutineVersion = "1.10.2"
+    const val jacksonModuleKotlinVersion = "2.16.1"
+    const val testContainerVersion = "1.19.6"
+    const val junitJupiterVersion = "5.10.2"
+    const val jacocoToolVersion = "0.8.11"
+    const val jvmTarget = "21"
+    const val hopliteVersion = "2.7.5"
 }
 
 plugins {
-    kotlin("jvm") version "1.8.10"
-    id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
-    id("com.palantir.git-version") version "2.0.0"
+    kotlin("jvm") version "2.1.21" // Updated from 1.8.10
+    id("io.github.gradle-nexus.publish-plugin") version "2.0.0" // Updated from 1.1.0
+    id("com.palantir.git-version") version "3.0.0" // Updated from 2.0.0
     jacoco
     `maven-publish`
     signing
@@ -39,14 +41,13 @@ plugins {
 val versionDetails: groovy.lang.Closure<com.palantir.gradle.gitversion.VersionDetails> by extra
 val details = versionDetails()
 
-val lastTag=details.lastTag.substring(1)
-val snapshotTag= {
-    val list=lastTag.split(".")
-    val third=(list.last().toInt() + 1).toString()
+val lastTag = details.lastTag.substring(1)
+val snapshotTag = {
+    val list = lastTag.split(".")
+    val third = (list.last().toInt() + 1).toString()
     "${list[0]}.${list[1]}.$third-SNAPSHOT"
 }
 version = if(details.isCleanTag) lastTag else snapshotTag()
-
 
 repositories {
     mavenCentral()
@@ -57,7 +58,6 @@ repositories {
             snapshotsOnly()
         }
     }
-
 }
 
 dependencies {
@@ -107,10 +107,13 @@ tasks.jacocoTestReport {
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>() {
-    kotlinOptions.jvmTarget = Versions.jvmTarget
+    compilerOptions.jvmTarget.set(JvmTarget.fromTarget(Versions.jvmTarget))
 }
 
 java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21)) // Added to explicitly set Java toolchain
+    }
     withSourcesJar()
     withJavadocJar()
 }
@@ -118,10 +121,8 @@ java {
 signing {
     val signingKey = providers
         .environmentVariable("GPG_SIGNING_KEY")
-        .forUseAtConfigurationTime()
     val signingPassphrase = providers
         .environmentVariable("GPG_SIGNING_PASSPHRASE")
-        .forUseAtConfigurationTime()
     if (signingKey.isPresent && signingPassphrase.isPresent) {
         useInMemoryPgpKeys(signingKey.get(), signingPassphrase.get())
         val extension = extensions
@@ -174,19 +175,12 @@ publishing {
 
 nexusPublishing {
     repositories {
+        // see https://central.sonatype.org/publish/publish-portal-ossrh-staging-api/#configuration
         sonatype {
-            nexusUrl.set(uri(Meta.release))
-            snapshotRepositoryUrl.set(uri(Meta.snapshot))
-            val ossrhUsername = providers
-                .environmentVariable("OSSRH_USERNAME")
-                .forUseAtConfigurationTime()
-            val ossrhPassword = providers
-                .environmentVariable("OSSRH_PASSWORD")
-                .forUseAtConfigurationTime()
-            if (ossrhUsername.isPresent && ossrhPassword.isPresent) {
-                username.set(ossrhUsername.get())
-                password.set(ossrhPassword.get())
-            }
+            nexusUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/service/local/"))
+            snapshotRepositoryUrl.set(uri("https://central.sonatype.com/repository/maven-snapshots/"))
+            username = providers.environmentVariable("SONATYPE_USERNAME")
+            password = providers.environmentVariable("SONATYPE_TOKEN")
         }
     }
 }
