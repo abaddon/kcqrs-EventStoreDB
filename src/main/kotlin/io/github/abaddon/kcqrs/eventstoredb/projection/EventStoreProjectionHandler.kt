@@ -1,9 +1,9 @@
 package io.github.abaddon.kcqrs.eventstoredb.projection
 
-import com.eventstore.dbclient.Position
-import com.eventstore.dbclient.ResolvedEvent
-import com.eventstore.dbclient.Subscription
-import com.eventstore.dbclient.SubscriptionListener
+import io.kurrent.dbclient.Position
+import io.kurrent.dbclient.ResolvedEvent
+import io.kurrent.dbclient.Subscription
+import io.kurrent.dbclient.SubscriptionListener
 import io.github.abaddon.kcqrs.core.domain.messages.events.IDomainEvent
 import io.github.abaddon.kcqrs.core.persistence.IProjectionRepository
 import io.github.abaddon.kcqrs.core.projections.IProjection

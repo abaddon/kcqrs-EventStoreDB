@@ -1,7 +1,7 @@
 package io.github.abaddon.kcqrs.eventstoredb.eventstore
 
-import com.eventstore.dbclient.EventData
-import com.eventstore.dbclient.ResolvedEvent
+import io.kurrent.dbclient.EventData
+import io.kurrent.dbclient.ResolvedEvent
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinFeature
 import com.fasterxml.jackson.module.kotlin.KotlinModule
@@ -22,7 +22,7 @@ fun Iterable<ResolvedEvent>.toDomainEvents(): Iterable<IDomainEvent> {
     return this.mapNotNull { resolvedEvent -> resolvedEvent.event?.toDomainEvent() }
 }
 
-fun com.eventstore.dbclient.RecordedEvent.toDomainEvent(): IDomainEvent {
+fun io.kurrent.dbclient.RecordedEvent.toDomainEvent(): IDomainEvent {
     val eventTypeName = this.eventType
     val eventClass = Class.forName(eventTypeName)
     val eventDataJson: String = this.eventData.decodeToString()

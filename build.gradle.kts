@@ -17,12 +17,12 @@ object Versions {
     const val kcqrsTestVersion = "0.0.11"
     
     // Updated dependencies
-    const val eventStoreDBVersion = "4.1.0"
+    const val kurrentClientVersion = "1.0.1"
     const val slf4jVersion = "2.0.12"
     const val kotlinVersion = "2.1.21"
     const val kotlinCoroutineVersion = "1.10.2"
     const val jacksonModuleKotlinVersion = "2.16.1"
-    const val testContainerVersion = "1.19.6"
+    const val testContainerVersion = "1.21.0"
     const val junitJupiterVersion = "5.10.2"
     const val jacocoToolVersion = "0.8.11"
     const val jvmTarget = "21"
@@ -76,7 +76,7 @@ dependencies {
     implementation("com.sksamuel.hoplite:hoplite-yaml:${Versions.hopliteVersion}")
 
     //EventStoreDB
-    implementation("com.eventstore:db-client-java:${Versions.eventStoreDBVersion}")
+    implementation("io.kurrent:kurrentdb-client:${Versions.kurrentClientVersion}")
 
     //Test
     testImplementation(kotlin("test"))
@@ -149,9 +149,9 @@ publishing {
                 }
                 developers {
                     developer {
-                        name.set("${Meta.developerName}")
-                        organization.set("${Meta.developerOrganization}")
-                        organizationUrl.set("${Meta.organizationUrl}")
+                        name.set(Meta.developerName)
+                        organization.set(Meta.developerOrganization)
+                        organizationUrl.set(Meta.organizationUrl)
                     }
                 }
                 scm {

@@ -1,14 +1,14 @@
 package io.github.abaddon.kcqrs.eventstoredb.config
 
-import com.eventstore.dbclient.EventStoreDBClientSettings
-import com.eventstore.dbclient.EventStoreDBConnectionString
+import io.kurrent.dbclient.KurrentDBClientSettings
+import io.kurrent.dbclient.KurrentDBConnectionString
 
 data class EventStoreDBConfig(
     private val connectionString: String
 ) {
 
-    fun eventStoreDBClientSettingsBuilder(): EventStoreDBClientSettings =
-        EventStoreDBConnectionString
+    fun kurrentDBClientSettingsBuilder(): KurrentDBClientSettings =
+        KurrentDBConnectionString
             .parseOrThrow(connectionString)
 
 }

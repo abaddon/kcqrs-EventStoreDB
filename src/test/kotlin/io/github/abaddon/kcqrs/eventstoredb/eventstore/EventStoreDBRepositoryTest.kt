@@ -23,7 +23,7 @@ internal class EventStoreDBRepositoryTest : WithEventStoreDBContainer() {
         @JvmStatic
         @BeforeAll
         fun setUp() {
-            val connectionString = "esdb://127.0.0.1:${container.getMappedPort(2113)}?tls=false&tlsVerifyCert=false"
+            val connectionString = "kurrentdb://127.0.0.1:${container.getMappedPort(2113)}?tls=false&tlsVerifyCert=false"
             repositoryConfig = EventStoreDBRepositoryConfig(EventStoreDBConfig(connectionString), streamName, 500, 500)
         }
     }
