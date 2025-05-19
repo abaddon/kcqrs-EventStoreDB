@@ -1,6 +1,6 @@
 package io.github.abaddon.kcqrs.eventstoredb.projection
 
-import com.eventstore.dbclient.Position
+import io.kurrent.dbclient.Position
 import io.github.abaddon.kcqrs.core.persistence.InMemoryProjectionRepository
 import io.github.abaddon.kcqrs.eventstoredb.config.EventStoreDBConfig
 import io.github.abaddon.kcqrs.eventstoredb.config.SubscriptionFilterConfig
@@ -28,7 +28,7 @@ internal class EventStoreProjectionHandlerTest : WithEventStoreDBContainer() {
         @JvmStatic
         @BeforeAll
         fun setUp() {
-            val connectionString = "esdb://127.0.0.1:${container.getMappedPort(2113)}?tls=false&tlsVerifyCert=false"
+            val connectionString = "kurrentdb://127.0.0.1:${container.getMappedPort(2113)}?tls=false&tlsVerifyCert=false"
             repositoryConfig = EventStoreDBRepositoryConfig(EventStoreDBConfig(connectionString), streamName, 500, 500)
         }
     }
@@ -48,11 +48,12 @@ internal class EventStoreProjectionHandlerTest : WithEventStoreDBContainer() {
             DummyProjection(it as DummyProjectionKey,0)
         }
 
+        // In EventStoreDB 4.x, we'll create a Position with specific values
         val eventStoreProjectionHandler = EventStoreProjectionHandler(
             projectionRepository,
             projectionKey,
             subscriptionFilterConfig,
-            Position.END
+            Position(0, 0) // Start position
         )
 
         //subscribe

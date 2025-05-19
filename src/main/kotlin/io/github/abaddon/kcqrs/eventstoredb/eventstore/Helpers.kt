@@ -1,7 +1,7 @@
 package io.github.abaddon.kcqrs.eventstoredb.eventstore
 
-import com.eventstore.dbclient.EventData
-import com.eventstore.dbclient.ResolvedEvent
+import io.kurrent.dbclient.EventData
+import io.kurrent.dbclient.ResolvedEvent
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinFeature
 import com.fasterxml.jackson.module.kotlin.KotlinModule
@@ -19,15 +19,12 @@ val mapper = ObjectMapper().registerModule(
 )
 
 fun Iterable<ResolvedEvent>.toDomainEvents(): Iterable<IDomainEvent> {
-    return this.map { resolvedEvent -> resolvedEvent.originalEvent.toDomainEvent() }
+    return this.mapNotNull { resolvedEvent -> resolvedEvent.event?.toDomainEvent() }
 }
 
-fun com.eventstore.dbclient.RecordedEvent.toDomainEvent(): IDomainEvent {
+fun io.kurrent.dbclient.RecordedEvent.toDomainEvent(): IDomainEvent {
     val eventTypeName = this.eventType
-
     val eventClass = Class.forName(eventTypeName)
-
-
     val eventDataJson: String = this.eventData.decodeToString()
     val eventMetaJson: String = this.userMetadata.decodeToString() //TODO headers not managed
 
@@ -37,14 +34,13 @@ fun com.eventstore.dbclient.RecordedEvent.toDomainEvent(): IDomainEvent {
 inline fun <reified T : IDomainEvent> T.toEventData(header: Map<String, String>): EventData {
     val eventId = this.messageId
     val eventType = this::class.qualifiedName!!
-    //val
     val eventJson = mapper.writeValueAsString(this)
     val headerJson = mapper.writeValueAsString(header)
-    return EventData(
+    
+    // EventData construction hasn't changed in 4.x
+    return EventData.builderAsJson(
         eventId,
         eventType,
-        "application/json",
-        eventJson.encodeToByteArray(),
-        headerJson.encodeToByteArray()
-    )
+        eventJson.encodeToByteArray()
+    ).metadataAsBytes(headerJson.encodeToByteArray()).build()
 }

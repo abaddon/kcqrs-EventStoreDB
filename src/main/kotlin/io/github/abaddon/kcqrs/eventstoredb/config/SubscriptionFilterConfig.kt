@@ -1,8 +1,8 @@
 package io.github.abaddon.kcqrs.eventstoredb.config
 
-import com.eventstore.dbclient.Position
-import com.eventstore.dbclient.SubscribeToAllOptions
-import com.eventstore.dbclient.SubscriptionFilter
+import io.kurrent.dbclient.Position
+import io.kurrent.dbclient.SubscribeToAllOptions
+import io.kurrent.dbclient.SubscriptionFilter
 
 data class SubscriptionFilterConfig(private val type: String, private val value: String) {
 
@@ -27,9 +27,9 @@ data class SubscriptionFilterConfig(private val type: String, private val value:
         return SubscriptionFilter.newBuilder()
             .let { builder ->
                 when (type) {
-                    SUBSCRIPTION_FILTER_EVENT_TYPE_PREFIX -> builder.withEventTypePrefix(value)
+                    SUBSCRIPTION_FILTER_EVENT_TYPE_PREFIX -> builder.addEventTypePrefix(value)
                     SUBSCRIPTION_FILTER_EVENT_TYPE_REGEX -> builder.withEventTypeRegularExpression(value)
-                    SUBSCRIPTION_FILTER_STREAM_NAME_PREFIX -> builder.withStreamNamePrefix(value)
+                    SUBSCRIPTION_FILTER_STREAM_NAME_PREFIX -> builder.addStreamNamePrefix(value)
                     SUBSCRIPTION_FILTER_STREAM_NAME_REGEX -> builder.withStreamNameRegularExpression(value)
                     else -> builder
                 }

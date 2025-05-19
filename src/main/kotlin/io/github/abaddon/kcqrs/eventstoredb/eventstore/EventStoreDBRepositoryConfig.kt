@@ -1,6 +1,6 @@
 package io.github.abaddon.kcqrs.eventstoredb.eventstore
 
-import com.eventstore.dbclient.EventStoreDBClientSettings
+import io.kurrent.dbclient.KurrentDBClientSettings
 import io.github.abaddon.kcqrs.eventstoredb.config.EventStoreDBConfig
 
 data class EventStoreDBRepositoryConfig(
@@ -10,5 +10,5 @@ data class EventStoreDBRepositoryConfig(
     val maxWritePageSize: Int
 
 ) {
-    fun eventStoreDBClientSettings(): EventStoreDBClientSettings = eventStoreDB.eventStoreDBClientSettingsBuilder()
+    fun eventStoreDBClientSettings(): KurrentDBClientSettings = eventStoreDB.kurrentDBClientSettingsBuilder()
 }
