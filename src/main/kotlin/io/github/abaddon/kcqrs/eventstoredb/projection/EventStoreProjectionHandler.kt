@@ -5,14 +5,13 @@ import io.kurrent.dbclient.ResolvedEvent
 import io.kurrent.dbclient.Subscription
 import io.kurrent.dbclient.SubscriptionListener
 import io.github.abaddon.kcqrs.core.domain.messages.events.IDomainEvent
+import io.github.abaddon.kcqrs.core.helpers.log
 import io.github.abaddon.kcqrs.core.persistence.IProjectionRepository
 import io.github.abaddon.kcqrs.core.projections.IProjection
 import io.github.abaddon.kcqrs.core.projections.IProjectionHandler
 import io.github.abaddon.kcqrs.core.projections.IProjectionKey
 import io.github.abaddon.kcqrs.eventstoredb.config.SubscriptionFilterConfig
 import io.github.abaddon.kcqrs.eventstoredb.eventstore.toDomainEvent
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 
 class EventStoreProjectionHandler<TProjection : IProjection>(
@@ -21,8 +20,6 @@ class EventStoreProjectionHandler<TProjection : IProjection>(
     val subscriptionFilter: SubscriptionFilterConfig?,
     val position: Position,
 ) : IProjectionHandler<TProjection>, SubscriptionListener() {
-
-    override val log: Logger = LoggerFactory.getLogger(this.javaClass.simpleName)
 
     override fun onEvent(subscription: Subscription, event: ResolvedEvent) {
         try {

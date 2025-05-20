@@ -4,12 +4,12 @@ package io.github.abaddon.kcqrs.eventstoredb.eventstore
 import io.github.abaddon.kcqrs.core.IAggregate
 import io.github.abaddon.kcqrs.core.IIdentity
 import io.github.abaddon.kcqrs.core.domain.messages.events.IDomainEvent
+import io.github.abaddon.kcqrs.core.helpers.log
 import io.github.abaddon.kcqrs.core.persistence.EventStoreRepository
 import io.github.abaddon.kcqrs.core.projections.IProjection
 import io.github.abaddon.kcqrs.core.projections.IProjectionHandler
 import io.github.abaddon.kcqrs.eventstoredb.projection.EventStoreProjectionHandler
 import io.kurrent.dbclient.*
-import org.slf4j.LoggerFactory
 import java.security.InvalidParameterException
 import java.util.concurrent.CompletionException
 
@@ -20,7 +20,6 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
 ) :
     EventStoreRepository<TAggregate>() {
 
-    override val log = LoggerFactory.getLogger(this::class.simpleName)
     private val client: KurrentDBClient =
         KurrentDBClient.create(eventStoreRepositoryConfig.eventStoreDBClientSettings())
     private val MAX_READ_PAGE_SIZE: Long = eventStoreRepositoryConfig.maxReadPageSize
@@ -39,7 +38,7 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
     override fun load(streamName: String, startFrom: Long): List<IDomainEvent> {
         val eventsFound = mutableListOf<IDomainEvent>()
         var currentRevision: Long = startFrom
-
+        log.debug("loading events from stream {} with startRevision {}", streamName, startFrom)
         try {
             var hasMoreEvents = true
             while (hasMoreEvents) {
@@ -50,12 +49,20 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
                 val result = client.readStream(streamName, options).join()
 
                 val events = result.events
+                log.debug(
+                    "events received: {}, firstStreamPosition: {}, lastStreamPosition {}",
+                    events.size,
+                    result.firstStreamPosition,
+                    result.lastStreamPosition
+                )
                 val maxRevision = events.maxOfOrNull { event ->
-                    log.info("event.originalEvent.revision, {}", event.originalEvent.revision)
+                    log.debug("event.originalEvent.revision, {}", event.originalEvent.revision)
                     event.originalEvent.revision
-                };
+                }
+                log.debug("maxRevision is {}", maxRevision)
                 if (events.isEmpty()) {
                     hasMoreEvents = false
+                    log.debug("stream is empty")
                 } else {
                     eventsFound.addAll(events.toDomainEvents())
                     currentRevision += events.size
@@ -69,12 +76,18 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
                 }
             }
         } catch (ex: CompletionException) {
+            log.debug("Error reading stream: {}", streamName, ex)
             when (ex.cause) {
                 is StreamNotFoundException -> log.debug("Stream not found: {}", streamName)
                 else -> log.error("Error reading stream: {}", streamName, ex)
             }
         }
-
+        log.debug(
+            "end loading events from stream {} with startRevision {} getting {} events",
+            streamName,
+            startFrom,
+            eventsFound.size
+        )
         return eventsFound
     }
 
@@ -89,6 +102,12 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
         header: Map<String, String>,
         currentVersion: Long
     ) {
+        log.debug(
+            "persisting uncommittedEvents {} with currentVersion {} on stream {}",
+            uncommittedEvents,
+            currentVersion,
+            streamName
+        )
         val eventsToSave = uncommittedEvents.map { domainEvent -> domainEvent.toEventData(header) }
         val options: AppendToStreamOptions =
             if (currentVersion <= 0L)

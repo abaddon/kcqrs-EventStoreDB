@@ -13,12 +13,12 @@ object Meta {
 
 object Versions {
     // Update these versions only if compatibility is confirmed with your library
-    const val kcqrsCoreVersion = "0.0.10"
+    const val kcqrsCoreVersion = "0.1.0"
     const val kcqrsTestVersion = "0.0.11"
     
     // Updated dependencies
     const val kurrentClientVersion = "1.0.1"
-    const val slf4jVersion = "2.0.12"
+    const val log4j = "2.24.3"
     const val kotlinVersion = "2.1.21"
     const val kotlinCoroutineVersion = "1.10.2"
     const val jacksonModuleKotlinVersion = "2.16.1"
@@ -65,7 +65,7 @@ dependencies {
     implementation("io.github.abaddon.kcqrs:kcqrs-core:${Versions.kcqrsCoreVersion}")
     implementation("io.github.abaddon.kcqrs:kcqrs-test:${Versions.kcqrsTestVersion}")
 
-    implementation("org.slf4j:slf4j-api:${Versions.slf4jVersion}")
+    implementation("org.apache.logging.log4j:log4j-api:${Versions.log4j}")
     implementation("org.jetbrains.kotlin:kotlin-reflect:${Versions.kotlinVersion}")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.kotlinCoroutineVersion}")
 
@@ -84,7 +84,8 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.kotlinCoroutineVersion}")
     testImplementation("org.testcontainers:testcontainers:${Versions.testContainerVersion}")
     testImplementation("org.testcontainers:junit-jupiter:${Versions.testContainerVersion}")
-    testImplementation("org.slf4j:slf4j-simple:${Versions.slf4jVersion}")
+    testImplementation("org.apache.logging.log4j:log4j-core:${Versions.log4j}")
+    testImplementation("org.apache.logging.log4j:log4j-slf4j-impl:${Versions.log4j}")
 }
 
 jacoco {
