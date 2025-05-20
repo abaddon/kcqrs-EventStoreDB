@@ -1,0 +1,69 @@
+# Version catalog is a central place for you to declare and version dependencies
+# https://docs.gradle.org/current/userguide/platforms.html#sub:version-catalog
+# https://docs.gradle.org/current/userguide/platforms.html#sub::toml-dependencies-format
+
+[versions]
+kotlin = "2.1.20"
+kotlinxCoroutines = "1.10.2"
+
+kcqrs-core = "0.1.0"
+kcqrs-test = "0.1.0"
+kustomCompare = "0.0.4"
+
+kurrentdb-client = "1.0.1"
+jacksonModuleKotlin = "2.16.1"
+log4j = "2.24.3"
+nexus-publish-plugin = "2.0.0"
+git-version = "3.0.0"
+junit = "5.10.2"
+testcontainer = "1.21.0"
+
+
+[libraries]
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+kotlin-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
+kotlin-coroutinesTest = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
+
+kcqrs-core = { module = "io.github.abaddon.kcqrs:kcqrs-core", version.ref = "kcqrs-core" }
+kcqrs-test = { module = "io.github.abaddon.kcqrs:kcqrs-test", version.ref = "kcqrs-test" }
+
+kustomCompare = { module = "io.github.abaddon:kustomCompare", version.ref = "kustomCompare" }
+jackson-module-Kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jacksonModuleKotlin" }
+
+kurrentdb-client = { module = "io.kurrent:kurrentdb-client", version.ref = "kurrentdb-client" }
+
+log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j" }
+log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "log4j" }
+log4j-slf4j-impl = { module = "org.apache.logging.log4j:log4j-slf4j-impl", version.ref = "log4j" }
+
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainer" }
+testcontainers-junit = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainer" }
+
+
+# Libraries can be bundled together for easier import
+[bundles]
+ksqrs-eventstore = [
+    "kotlin-coroutines",
+    "kotlin-reflect",
+    "kcqrs-core",
+    "kcqrs-test",
+    "kustomCompare",
+    "kurrentdb-client",
+    "jackson-module-Kotlin",
+    "log4j-api"
+]
+
+ksqrs-eventstore-test = [
+    "junit-jupiter",
+    "kotlin-coroutinesTest",
+    "testcontainers",
+    "testcontainers-junit",
+    "log4j-core",
+    "log4j-slf4j-impl"
+]
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+nexus-publish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexus-publish-plugin" }
+git-version = { id = "com.palantir.git-version", version.ref = "git-version" }

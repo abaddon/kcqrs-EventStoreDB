@@ -7,7 +7,7 @@ import io.github.abaddon.kcqrs.testHelpers.events.CounterIncreasedEvent
 import io.github.abaddon.kcqrs.testHelpers.events.CounterInitialisedEvent
 import io.github.abaddon.kcqrs.testHelpers.events.DomainErrorEvent
 
-data class CounterAggregateRoot private constructor(
+data class CounterAggregateRoot(
     override val id: CounterAggregateId,
     override val version: Long,
     val counter: Int,

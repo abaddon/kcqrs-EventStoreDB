@@ -14,13 +14,7 @@ data class SubscriptionFilterConfig(private val type: String, private val value:
     }
 
     fun subscribeToAllOptions(position: Position): SubscribeToAllOptions =
-        SubscribeToAllOptions.get()
-            .let { subscribeToAllOptions ->
-                when (val filter = subscriptionFilterBuilder()) {
-                    is SubscriptionFilter -> subscribeToAllOptions.filter(filter)
-                    else -> subscribeToAllOptions
-                }
-            }
+        SubscribeToAllOptions.get().filter(subscriptionFilterBuilder())
             .fromPosition(position)
 
     private fun subscriptionFilterBuilder(): SubscriptionFilter {

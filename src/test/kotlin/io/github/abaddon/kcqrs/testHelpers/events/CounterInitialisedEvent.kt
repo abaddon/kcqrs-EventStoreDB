@@ -6,7 +6,7 @@ import io.github.abaddon.kcqrs.testHelpers.entities.CounterAggregateId
 import io.github.abaddon.kcqrs.testHelpers.entities.CounterAggregateRoot
 import java.util.*
 
-data class CounterInitialisedEvent private constructor(
+data class CounterInitialisedEvent(
     override val messageId: UUID,
     override val aggregateId: CounterAggregateId,
     val value: Int
