@@ -14,7 +14,7 @@ kurrentdb-client = "1.0.1"
 jacksonModuleKotlin = "2.16.1"
 log4j = "2.24.3"
 nexus-publish-plugin = "2.0.0"
-git-version = "3.0.0"
+git-version = "3.3.0"
 junit = "5.10.2"
 testcontainer = "1.21.0"
 
