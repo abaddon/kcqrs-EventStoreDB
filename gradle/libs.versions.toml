@@ -6,8 +6,8 @@
 kotlin = "2.1.20"
 kotlinxCoroutines = "1.10.2"
 
-kcqrs-core = "0.1.1"
-kcqrs-test = "0.1.1"
+kcqrs-core = "0.1.2-SNAPSHOT"
+kcqrs-test = "0.1.2-SNAPSHOT"
 
 kurrentdb-client = "1.0.1"
 jacksonModuleKotlin = "2.16.1"
@@ -17,6 +17,7 @@ nexus-publish-plugin = "2.0.0"
 git-version = "3.0.0"
 junit = "5.10.2"
 testcontainer = "1.21.0"
+assertJ = "4.0.0-M1"
 
 
 [libraries]
@@ -43,6 +44,7 @@ log4j-slf4j-impl = { module = "org.apache.logging.log4j:log4j-slf4j-impl", versi
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainer" }
 testcontainers-junit = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainer" }
+assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertJ" }
 
 
 # Libraries can be bundled together for easier import
@@ -69,7 +71,8 @@ ksqrs-eventstore-test = [
     "junit-jupiter",
     "kotlin-coroutinesTest",
     "testcontainers",
-    "testcontainers-junit"
+    "testcontainers-junit",
+    "assertj-core"
 ]
 
 [plugins]

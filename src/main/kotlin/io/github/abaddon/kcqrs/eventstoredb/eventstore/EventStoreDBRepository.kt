@@ -140,11 +140,13 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
     }
 
     private fun <TProjection : IProjection> subscribeEventStoreProjectionHandler(projectionHandler: EventStoreProjectionHandler<TProjection>) {
-        // In EventStoreDB 4.x, the subscription API has been updated
+        log.debug("subscribing to projection handler {}", projectionHandler)
         val options = projectionHandler.subscriptionFilter?.subscribeToAllOptions(projectionHandler.position)
             ?: SubscribeToAllOptions.get().fromStart()
 
-        client.subscribeToAll(projectionHandler, options)
+        val subscription = client.subscribeToAll(projectionHandler, options).get()
+        log.debug("subscribed to projection {}", subscription)
+
     }
 
     override suspend fun publish(persistResult: Result<Unit>, events: List<IDomainEvent>): Result<Unit> =

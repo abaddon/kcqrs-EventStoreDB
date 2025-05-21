@@ -9,6 +9,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.util.*
@@ -36,6 +37,11 @@ internal class EventStoreDBRepositoryTest : WithEventStoreDBContainer() {
             { CounterAggregateRoot(it as CounterAggregateId) },
             testDispatcher
         )
+    }
+
+    @AfterEach
+    fun close(){
+        repository.cleanup()
     }
 
 
