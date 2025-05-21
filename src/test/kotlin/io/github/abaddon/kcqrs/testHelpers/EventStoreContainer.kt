@@ -1,5 +1,6 @@
 package io.github.abaddon.kcqrs.testHelpers
 
+import io.github.abaddon.kcqrs.core.helpers.log
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy
 import java.time.Duration
@@ -12,6 +13,7 @@ class EventStoreContainer : GenericContainer<EventStoreContainer>(DOCKER_IMAGE) 
     }
 
     init {
+        log.info("Starting EventStoreDB container...")
         withExposedPorts(1113, 2113)
             .withEnv(
                 mapOf(
@@ -28,7 +30,7 @@ class EventStoreContainer : GenericContainer<EventStoreContainer>(DOCKER_IMAGE) 
                     .withRegEx(".*SPARTA.*")
                     .withStartupTimeout(Duration.of(10L, ChronoUnit.MINUTES))
             )
-        //Finished Starting Projection Manager Response Reader
+        log.info("EventStoreDB container started")
     }
 
 

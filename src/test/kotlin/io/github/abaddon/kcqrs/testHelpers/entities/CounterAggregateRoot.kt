@@ -15,7 +15,6 @@ data class CounterAggregateRoot(
 ) : AggregateRoot() {
 
     constructor(id: CounterAggregateId) : this(id, 0L, 0, ArrayList<IDomainEvent>())
-    //constructor(id: CounterAggregateId) : this(CounterAggregateId(), 0L, 0)
 
     companion object {
 

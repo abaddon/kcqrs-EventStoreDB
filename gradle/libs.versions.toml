@@ -6,13 +6,13 @@
 kotlin = "2.1.20"
 kotlinxCoroutines = "1.10.2"
 
-kcqrs-core = "0.1.0"
-kcqrs-test = "0.1.0"
-kustomCompare = "0.0.4"
+kcqrs-core = "0.1.1"
+kcqrs-test = "0.1.1"
 
 kurrentdb-client = "1.0.1"
 jacksonModuleKotlin = "2.16.1"
 log4j = "2.24.3"
+slf4j-api = "2.0.17"
 nexus-publish-plugin = "2.0.0"
 git-version = "3.0.0"
 junit = "5.10.2"
@@ -27,14 +27,18 @@ kotlin-coroutinesTest = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-tes
 kcqrs-core = { module = "io.github.abaddon.kcqrs:kcqrs-core", version.ref = "kcqrs-core" }
 kcqrs-test = { module = "io.github.abaddon.kcqrs:kcqrs-test", version.ref = "kcqrs-test" }
 
-kustomCompare = { module = "io.github.abaddon:kustomCompare", version.ref = "kustomCompare" }
 jackson-module-Kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jacksonModuleKotlin" }
 
 kurrentdb-client = { module = "io.kurrent:kurrentdb-client", version.ref = "kurrentdb-client" }
 
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j-api" }
 log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j" }
 log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "log4j" }
+log4j-slf4j2-impl = { module = "org.apache.logging.log4j:log4j-slf4j2-impl", version.ref = "log4j" }
 log4j-slf4j-impl = { module = "org.apache.logging.log4j:log4j-slf4j-impl", version.ref = "log4j" }
+
+
+
 
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainer" }
@@ -43,24 +47,29 @@ testcontainers-junit = { module = "org.testcontainers:junit-jupiter", version.re
 
 # Libraries can be bundled together for easier import
 [bundles]
+
+log = ["slf4j-api"]
+log-test =  [
+    "slf4j-api",
+    "log4j-api",
+    "log4j-core",
+    "log4j-slf4j2-impl"
+]
+
 ksqrs-eventstore = [
     "kotlin-coroutines",
     "kotlin-reflect",
     "kcqrs-core",
     "kcqrs-test",
-    "kustomCompare",
     "kurrentdb-client",
-    "jackson-module-Kotlin",
-    "log4j-api"
+    "jackson-module-Kotlin"
 ]
 
 ksqrs-eventstore-test = [
     "junit-jupiter",
     "kotlin-coroutinesTest",
     "testcontainers",
-    "testcontainers-junit",
-    "log4j-core",
-    "log4j-slf4j-impl"
+    "testcontainers-junit"
 ]
 
 [plugins]

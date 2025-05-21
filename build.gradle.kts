@@ -43,13 +43,12 @@ repositories {
 
 dependencies {
 
+    compileOnly(libs.bundles.log)
     implementation(libs.bundles.ksqrs.eventstore)
-    //Config
-    implementation("com.sksamuel.hoplite:hoplite-core:2.7.5")
-    implementation("com.sksamuel.hoplite:hoplite-yaml:2.7.5")
 
     //Test
     testImplementation(kotlin("test"))
+    testImplementation(libs.bundles.log.test)
     implementation(libs.bundles.ksqrs.eventstore.test)
 }
 

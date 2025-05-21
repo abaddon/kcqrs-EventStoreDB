@@ -1,8 +1,8 @@
 package io.github.abaddon.kcqrs.eventstoredb.eventstore
 
 import io.github.abaddon.kcqrs.core.domain.Result
+import io.github.abaddon.kcqrs.core.helpers.log
 import io.github.abaddon.kcqrs.eventstoredb.config.EventStoreDBConfig
-import io.github.abaddon.kcqrs.testHelpers.WithEventStoreDBContainer
 import io.github.abaddon.kcqrs.testHelpers.entities.CounterAggregateId
 import io.github.abaddon.kcqrs.testHelpers.entities.CounterAggregateRoot
 import kotlinx.coroutines.delay
@@ -25,16 +25,17 @@ internal class EventStoreDBRepositoryTest : WithEventStoreDBContainer() {
         fun setUp() {
             val connectionString = "kurrentdb://127.0.0.1:${container.getMappedPort(2113)}?tls=false&tlsVerifyCert=false"
             repositoryConfig = EventStoreDBRepositoryConfig(EventStoreDBConfig(connectionString), streamName, 500, 500)
+            repository = EventStoreDBRepository(repositoryConfig) { CounterAggregateRoot(it as CounterAggregateId) }
         }
     }
 
     @Test
     fun `Given the initialise event when persist it then event is stored in the eventStore`() {
-        val repository = EventStoreDBRepository(repositoryConfig) { CounterAggregateRoot(it as CounterAggregateId) }
+        //Given
         val counterAggregateId = CounterAggregateId()
-        println("counterAggregateId: ${counterAggregateId.value}")
+        log.info("counterAggregateId: ${counterAggregateId.value}")
         val aggregate = CounterAggregateRoot.initialiseCounter(counterAggregateId, 5)
-        println("aggregateId: ${aggregate.id}")
+        log.info("aggregateId: ${aggregate.id}")
         runBlocking {
             repository.save(aggregate, UUID.randomUUID())
         }
