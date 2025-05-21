@@ -10,16 +10,18 @@ import io.github.abaddon.kcqrs.core.projections.IProjection
 import io.github.abaddon.kcqrs.core.projections.IProjectionHandler
 import io.github.abaddon.kcqrs.eventstoredb.projection.EventStoreProjectionHandler
 import io.kurrent.dbclient.*
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
 import java.security.InvalidParameterException
 import java.util.concurrent.CompletionException
 
 
 class EventStoreDBRepository<TAggregate : IAggregate>(
     eventStoreRepositoryConfig: EventStoreDBRepositoryConfig,
-    private val funEmpty: (identity: IIdentity) -> TAggregate
+    private val funEmpty: (identity: IIdentity) -> TAggregate,
+    dispatcher: CoroutineDispatcher
 ) :
-    EventStoreRepository<TAggregate>() {
-
+    EventStoreRepository<TAggregate>(dispatcher) {
     private val client: KurrentDBClient =
         KurrentDBClient.create(eventStoreRepositoryConfig.eventStoreDBClientSettings())
     private val MAX_READ_PAGE_SIZE: Long = eventStoreRepositoryConfig.maxReadPageSize
@@ -28,14 +30,15 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
 
     override fun emptyAggregate(aggregateId: IIdentity): TAggregate = funEmpty(aggregateId)
 
-    override fun <TProjection : IProjection> subscribe(projectionHandler: IProjectionHandler<TProjection>) {
-        when (projectionHandler) {
-            is EventStoreProjectionHandler -> subscribeEventStoreProjectionHandler(projectionHandler)
-            else -> log.warn("EventStoreProjectionHandler required, subscription failed")
+    override suspend fun <TProjection : IProjection> subscribe(projectionHandler: IProjectionHandler<TProjection>) =
+        withContext(coroutineContext) {
+            when (projectionHandler) {
+                is EventStoreProjectionHandler -> subscribeEventStoreProjectionHandler(projectionHandler)
+                else -> log.warn("EventStoreProjectionHandler required, subscription failed")
+            }
         }
-    }
 
-    override fun load(streamName: String, startFrom: Long): List<IDomainEvent> {
+    override suspend fun load(streamName: String, startFrom: Long): List<IDomainEvent> = withContext(coroutineContext) {
         val eventsFound = mutableListOf<IDomainEvent>()
         var currentRevision: Long = startFrom
         log.debug("loading events from stream {} with startRevision {}", streamName, startFrom)
@@ -46,7 +49,7 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
                     .forwards()
                     .fromRevision(currentRevision)
                     .maxCount(MAX_READ_PAGE_SIZE)
-                val result = client.readStream(streamName, options).join()
+                val result = client.readStream(streamName, options).get()
 
                 val events = result.events
                 log.debug(
@@ -88,7 +91,7 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
             startFrom,
             eventsFound.size
         )
-        return eventsFound
+        eventsFound
     }
 
     override fun aggregateIdStreamName(aggregateId: IIdentity): String {
@@ -96,12 +99,12 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
         return "$streamName.${aggregateId.valueAsString()}"
     }
 
-    override fun persist(
+    override suspend fun persist(
         streamName: String,
         uncommittedEvents: List<IDomainEvent>,
         header: Map<String, String>,
         currentVersion: Long
-    ) {
+    ): Result<Unit> = withContext(coroutineContext) {
         log.debug(
             "persisting uncommittedEvents {} with currentVersion {} on stream {}",
             uncommittedEvents,
@@ -116,15 +119,24 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
                 AppendToStreamOptions.get().streamRevision(currentVersion - 1)
 
         // The append method has changed in EventStoreDB 4.x
-        val writeResultFuture = client.appendToStream(streamName, options, eventsToSave.iterator())
-
-        writeResultFuture.whenComplete { writeResult, error ->
-            if (error == null) {
-                log.info("Events published on stream $streamName, nextExpectedRevision: ${writeResult.nextExpectedRevision}")
-            } else {
-                log.error("Events not published on stream $streamName", error)
-            }
+        try {
+            client.appendToStream(streamName, options, eventsToSave.iterator()).get()
+            log.debug("Events applied on stream $streamName")
+            Result.success(Unit)
+        } catch (ex: CompletionException) {
+            log.error("Events not published on stream $streamName")
+            Result.failure(ex)
         }
+
+//        writeResultFuture.whenComplete { writeResult, error ->
+//            if (error == null) {
+//                log.info("Events published on stream $streamName, nextExpectedRevision: ${writeResult.nextExpectedRevision}")
+//                Result.success(Unit)
+//            } else {
+//                log.error("Events not published on stream $streamName", error)
+//                Result.failure(error)
+//            }
+//        }.get()
     }
 
     private fun <TProjection : IProjection> subscribeEventStoreProjectionHandler(projectionHandler: EventStoreProjectionHandler<TProjection>) {
@@ -135,6 +147,7 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
         client.subscribeToAll(projectionHandler, options)
     }
 
-    override fun publish(events: List<IDomainEvent>) {}
+    override suspend fun publish(persistResult: Result<Unit>, events: List<IDomainEvent>): Result<Unit> =
+        Result.success(Unit)
 
 }
