@@ -9,7 +9,7 @@ data class InitialiseCounterCommand(
     val value: Int
 ) : Command<CounterAggregateRoot>(aggregateID) {
 
-    override fun execute(currentAggregate: CounterAggregateRoot?): CounterAggregateRoot {
-        return CounterAggregateRoot.initialiseCounter(aggregateID, value)
+    override fun execute(currentAggregate: CounterAggregateRoot?): Result<CounterAggregateRoot> = runCatching {
+        CounterAggregateRoot.initialiseCounter(aggregateID, value)
     }
 }

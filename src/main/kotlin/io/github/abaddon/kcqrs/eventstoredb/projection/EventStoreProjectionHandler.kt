@@ -5,7 +5,7 @@ import io.kurrent.dbclient.ResolvedEvent
 import io.kurrent.dbclient.Subscription
 import io.kurrent.dbclient.SubscriptionListener
 import io.github.abaddon.kcqrs.core.domain.messages.events.IDomainEvent
-import io.github.abaddon.kcqrs.core.helpers.log
+import io.github.abaddon.kcqrs.core.helpers.LoggerFactory.log
 import io.github.abaddon.kcqrs.core.persistence.IProjectionRepository
 import io.github.abaddon.kcqrs.core.projections.IProjection
 import io.github.abaddon.kcqrs.core.projections.IProjectionHandler

@@ -8,8 +8,8 @@ data class DecreaseCounterCommand(
     override val aggregateID: CounterAggregateId,
     val value: Int
 ) : Command<CounterAggregateRoot>(aggregateID) {
-    override fun execute(currentAggregate: CounterAggregateRoot?): CounterAggregateRoot {
+    override fun execute(currentAggregate: CounterAggregateRoot?): Result<CounterAggregateRoot> = runCatching {
         requireNotNull(currentAggregate)
-        return currentAggregate.decreaseCounter(value)
+        currentAggregate.decreaseCounter(value)
     }
 }

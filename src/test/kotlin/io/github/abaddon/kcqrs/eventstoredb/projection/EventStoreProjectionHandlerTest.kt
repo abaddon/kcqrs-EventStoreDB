@@ -48,11 +48,6 @@ internal class EventStoreProjectionHandlerTest : WithEventStoreDBContainer() {
         )
     }
 
-    @AfterEach
-    fun close() {
-        repository.cleanup()
-    }
-
     @Test
     fun `Given an event, when it's applied to a projection then the updated projection is updated`() =
         testScope.runTest {

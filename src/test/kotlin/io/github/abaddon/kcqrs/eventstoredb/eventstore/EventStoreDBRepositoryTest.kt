@@ -9,7 +9,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.util.*
@@ -38,12 +37,6 @@ internal class EventStoreDBRepositoryTest : WithEventStoreDBContainer() {
             testDispatcher
         )
     }
-
-    @AfterEach
-    fun close(){
-        repository.cleanup()
-    }
-
 
     @Test
     fun `Given the initialise event when persist it then event is stored in the eventStore`() = testScope.runTest {
