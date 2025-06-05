@@ -1,5 +1,6 @@
 package io.github.abaddon.kcqrs.eventstoredb.projection
 
+import io.github.abaddon.kcqrs.core.helpers.LoggerFactory.log
 import io.github.abaddon.kcqrs.core.persistence.InMemoryProjectionRepository
 import io.github.abaddon.kcqrs.eventstoredb.config.EventStoreDBConfig
 import io.github.abaddon.kcqrs.eventstoredb.config.SubscriptionFilterConfig
@@ -12,10 +13,11 @@ import io.github.abaddon.kcqrs.testHelpers.projections.DummyProjection
 import io.github.abaddon.kcqrs.testHelpers.projections.DummyProjectionKey
 import io.kurrent.dbclient.Position
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.util.*
@@ -58,7 +60,7 @@ internal class EventStoreProjectionHandlerTest : WithEventStoreDBContainer() {
                 "${repositoryConfig.streamName}."
             )
 
-            val projectionRepository = InMemoryProjectionRepository<DummyProjection>() {
+            val projectionRepository = InMemoryProjectionRepository<DummyProjection>(testScope.coroutineContext) {
                 DummyProjection(it as DummyProjectionKey, 0)
             }
 
@@ -66,31 +68,46 @@ internal class EventStoreProjectionHandlerTest : WithEventStoreDBContainer() {
                 projectionRepository,
                 projectionKey,
                 subscriptionFilterConfig,
-                Position(0, 0)
+                Position(0, 0),
+                testScope.coroutineContext
             )
             repository.subscribe(eventStoreProjectionHandler)
 
+            // When
+            val counterAggregateId = CounterAggregateId()
+            val aggregate = CounterAggregateRoot.initialiseCounter(counterAggregateId, 5)
 
-            //When
-            runCatching {
-                val counterAggregateId = CounterAggregateId()
-                val aggregate = CounterAggregateRoot.initialiseCounter(counterAggregateId, 5)
-                println("aggregateId: ${aggregate.id}")
+            repository.save(aggregate, UUID.randomUUID())
+                .onFailure {
+                    log.error("Failed to save aggregate", it)
+                    assert(false) { "Failed to save aggregate: ${it.message}" }
+                }
 
-                repository.save(aggregate, UUID.randomUUID())
+            // Wait for the projection to be updated
+            // Poll until the projection is updated or timeout
+            var projectionUpdated = false
+            val startTime = System.currentTimeMillis()
+            val timeout = 5000L // 5 seconds timeout
 
-                projectionRepository.getByKey(projectionKey)
+            while (!projectionUpdated && (System.currentTimeMillis() - startTime) < timeout) {
+                delay(50) // Small delay between checks
+                runCurrent()
+
+                val result = projectionRepository.getByKey(projectionKey)
+                projectionUpdated = result.isSuccess && result.getOrNull()?.numEvents == 1
             }
-                //Then
+
+            // Then - Verify projection was updated
+            assert(projectionUpdated) { "Projection was not updated within timeout period" }
+
+            val result = projectionRepository.getByKey(projectionKey)
+            result
                 .onSuccess { actualProjection ->
                     val expectedProjection = DummyProjection(projectionKey, 1)
                     assertEquals(expectedProjection, actualProjection)
-
-                }.onFailure {
-                    println(it)
-                    assert(false)
                 }
-
-
+                .onFailure {
+                    assert(false) { "Failed to get projection: ${it.message}" }
+                }
         }
 }

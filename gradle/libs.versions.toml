@@ -6,8 +6,8 @@
 kotlin = "2.1.20"
 kotlinxCoroutines = "1.10.2"
 
-kcqrs-core = "0.2.0"
-kcqrs-test = "0.2.0"
+kcqrs-core = "0.2.1"
+kcqrs-test = "0.2.1"
 
 kurrentdb-client = "1.0.1"
 jacksonModuleKotlin = "2.16.1"

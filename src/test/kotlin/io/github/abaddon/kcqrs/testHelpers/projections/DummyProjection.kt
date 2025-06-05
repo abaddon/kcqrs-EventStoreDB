@@ -7,6 +7,6 @@ import io.github.abaddon.kcqrs.core.projections.IProjection
 data class DummyProjection(override val key: DummyProjectionKey, val numEvents: Int) : IProjection {
 
     override fun applyEvent(event: IDomainEvent): DummyProjection {
-        return copy(numEvents = +1)
+        return copy(numEvents = numEvents + 1)
     }
 }

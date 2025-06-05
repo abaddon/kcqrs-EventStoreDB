@@ -10,6 +10,8 @@ import io.github.abaddon.kcqrs.core.projections.IProjection
 import io.github.abaddon.kcqrs.core.projections.IProjectionHandler
 import io.github.abaddon.kcqrs.eventstoredb.projection.EventStoreProjectionHandler
 import io.kurrent.dbclient.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import java.security.InvalidParameterException
 import java.util.concurrent.CompletionException
@@ -38,55 +40,67 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
             }
         }
 
-    override suspend fun load(streamName: String, startFrom: Long): Result<List<IDomainEvent>> =
+    override suspend fun loadEvents(streamName: String, startFrom: Long): Result<Flow<IDomainEvent>> =
         withContext(coroutineContext) {
-            val eventsFound = mutableListOf<IDomainEvent>()
             var currentRevision: Long = startFrom
+            var totalEventsLoaded = 0
             log.debug("loading events from stream {} with startRevision {}", streamName, startFrom)
-            val result = runCatching {
-                var hasMoreEvents = true
-                while (hasMoreEvents) {
-                    val options = ReadStreamOptions.get()
-                        .forwards()
-                        .fromRevision(currentRevision)
-                        .maxCount(MAX_READ_PAGE_SIZE)
-                    val result = client.readStream(streamName, options).get()
 
-                    val events = result.events
-                    log.debug(
-                        "events received: {}, firstStreamPosition: {}, lastStreamPosition {}",
-                        events.size,
-                        result.firstStreamPosition,
-                        result.lastStreamPosition
-                    )
-                    val maxRevision = events.maxOfOrNull { event ->
-                        log.debug("event.originalEvent.revision, {}", event.originalEvent.revision)
-                        event.originalEvent.revision
-                    }
-                    log.debug("maxRevision is {}", maxRevision)
-                    if (events.isEmpty()) {
-                        hasMoreEvents = false
-                        log.debug("stream is empty")
-                    } else {
-                        eventsFound.addAll(events.toDomainEvents())
-                        currentRevision += events.size
-                        if (currentRevision != maxRevision) {
-                            log.warn(
-                                "currentRevision and maxRevision are different! {} and {}",
-                                currentRevision,
-                                maxRevision
-                            )
+            val result = runCatching {
+                flow<IDomainEvent> {
+                    var hasMoreEvents = true
+                    while (hasMoreEvents) {
+                        val options = ReadStreamOptions.get()
+                            .forwards()
+                            .fromRevision(currentRevision)
+                            .maxCount(MAX_READ_PAGE_SIZE)
+                        val result = client.readStream(streamName, options).get()
+
+                        val events = result.events
+                        log.debug(
+                            "events received: {}, firstStreamPosition: {}, lastStreamPosition {}",
+                            events.size,
+                            result.firstStreamPosition,
+                            result.lastStreamPosition
+                        )
+
+                        if (events.isEmpty()) {
+                            hasMoreEvents = false
+                            log.debug("stream is empty")
+                        } else {
+                            val domainEvents = events.toDomainEvents()
+
+                            // Emit each domain event individually
+                            domainEvents.forEach { domainEvent ->
+                                totalEventsLoaded += 1
+                                emit(domainEvent)
+                            }
+
+                            val maxRevision = events.maxOfOrNull { event ->
+                                log.debug("event.originalEvent.revision, {}", event.originalEvent.revision)
+                                event.originalEvent.revision
+                            }
+                            log.debug("maxRevision is {}", maxRevision)
+
+                            currentRevision += events.size
+                            if (currentRevision != maxRevision) {
+                                log.warn(
+                                    "currentRevision and maxRevision are different! {} and {}",
+                                    currentRevision,
+                                    maxRevision
+                                )
+                            }
                         }
                     }
                 }
-                log.debug(
-                    "end loading events from stream {} with startRevision {} getting {} events",
-                    streamName,
-                    startFrom,
-                    eventsFound.size
-                )
-                eventsFound
             }
+
+            log.debug(
+                "end loading events from stream {} with startRevision {} getting {} events",
+                streamName,
+                startFrom,
+                totalEventsLoaded
+            )
 
             when {
                 result.isFailure -> {
@@ -95,7 +109,7 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
                     when (ex.cause) {
                         is StreamNotFoundException -> {
                             log.debug("Stream not found: {}", streamName)
-                            Result.success(eventsFound)
+                            Result.success(flow<IDomainEvent> {})
                         }
 
                         else -> {
