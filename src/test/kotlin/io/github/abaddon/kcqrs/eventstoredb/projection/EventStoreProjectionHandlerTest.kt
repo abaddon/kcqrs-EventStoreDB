@@ -9,6 +9,7 @@ import io.github.abaddon.kcqrs.eventstoredb.eventstore.EventStoreDBRepositoryCon
 import io.github.abaddon.kcqrs.testHelpers.WithEventStoreDBContainer
 import io.github.abaddon.kcqrs.testHelpers.entities.CounterAggregateId
 import io.github.abaddon.kcqrs.testHelpers.entities.CounterAggregateRoot
+import io.github.abaddon.kcqrs.testHelpers.events.CounterInitialisedEvent
 import io.github.abaddon.kcqrs.testHelpers.projections.DummyProjection
 import io.github.abaddon.kcqrs.testHelpers.projections.DummyProjectionKey
 import io.kurrent.dbclient.Position
@@ -18,10 +19,11 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import org.assertj.core.api.AssertionsForClassTypes.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.util.*
-import kotlin.test.assertEquals
+import  java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 @ExperimentalCoroutinesApi
 internal class EventStoreProjectionHandlerTest : WithEventStoreDBContainer() {
@@ -45,8 +47,7 @@ internal class EventStoreProjectionHandlerTest : WithEventStoreDBContainer() {
         )
         repository = EventStoreDBRepository(
             repositoryConfig,
-            { CounterAggregateRoot(it as CounterAggregateId) },
-            testDispatcher
+            { CounterAggregateRoot(it as CounterAggregateId) }
         )
     }
 
@@ -60,7 +61,7 @@ internal class EventStoreProjectionHandlerTest : WithEventStoreDBContainer() {
                 "${repositoryConfig.streamName}."
             )
 
-            val projectionRepository = InMemoryProjectionRepository<DummyProjection>(testScope.coroutineContext) {
+            val projectionRepository = InMemoryProjectionRepository() {
                 DummyProjection(it as DummyProjectionKey, 0)
             }
 
@@ -68,8 +69,7 @@ internal class EventStoreProjectionHandlerTest : WithEventStoreDBContainer() {
                 projectionRepository,
                 projectionKey,
                 subscriptionFilterConfig,
-                Position(0, 0),
-                testScope.coroutineContext
+                Position(0, 0)
             )
             repository.subscribe(eventStoreProjectionHandler)
 
@@ -103,8 +103,14 @@ internal class EventStoreProjectionHandlerTest : WithEventStoreDBContainer() {
             val result = projectionRepository.getByKey(projectionKey)
             result
                 .onSuccess { actualProjection ->
-                    val expectedProjection = DummyProjection(projectionKey, 1)
-                    assertEquals(expectedProjection, actualProjection)
+                    var event = CounterInitialisedEvent.create(counterAggregateId, 5, 1)
+                    val lastProcessedEvent: ConcurrentHashMap<String, Long> = ConcurrentHashMap()
+                    lastProcessedEvent[event.aggregateType] = 1
+                    val expectedProjection = DummyProjection(projectionKey, 1, lastProcessedEvent)
+                    assertThat(actualProjection)
+                        .usingRecursiveComparison()
+                        .ignoringFields("lastUpdated")
+                        .isEqualTo(expectedProjection)
                 }
                 .onFailure {
                     assert(false) { "Failed to get projection: ${it.message}" }

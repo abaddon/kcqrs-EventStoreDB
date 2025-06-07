@@ -7,7 +7,7 @@ import io.github.abaddon.kcqrs.testHelpers.events.CounterInitialisedEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.time.Instant
-import java.util.*
+import  java.util.UUID
 
 
 internal class HelpersKtTest {
@@ -17,7 +17,7 @@ internal class HelpersKtTest {
 
         val aggregateId = CounterAggregateId(UUID.randomUUID())
         val value = 5
-        val expectedDomainEvent = CounterInitialisedEvent.create(aggregateId,value)
+        val expectedDomainEvent = CounterInitialisedEvent.create(aggregateId,value,1)
 
         val headers = mapOf<String, String>(
             Pair("header1", "value1")

@@ -9,21 +9,24 @@ import io.github.abaddon.kcqrs.core.persistence.EventStoreRepository
 import io.github.abaddon.kcqrs.core.projections.IProjection
 import io.github.abaddon.kcqrs.core.projections.IProjectionHandler
 import io.github.abaddon.kcqrs.eventstoredb.projection.EventStoreProjectionHandler
-import io.kurrent.dbclient.*
+import io.kurrent.dbclient.AppendToStreamOptions
+import io.kurrent.dbclient.KurrentDBClient
+import io.kurrent.dbclient.ReadStreamOptions
+import io.kurrent.dbclient.StreamNotFoundException
+import io.kurrent.dbclient.StreamState
+import io.kurrent.dbclient.SubscribeToAllOptions
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import java.security.InvalidParameterException
 import java.util.concurrent.CompletionException
-import kotlin.coroutines.CoroutineContext
 
 
 class EventStoreDBRepository<TAggregate : IAggregate>(
     eventStoreRepositoryConfig: EventStoreDBRepositoryConfig,
-    private val funEmpty: (identity: IIdentity) -> TAggregate,
-    coroutineContext: CoroutineContext
+    private val funEmpty: (identity: IIdentity) -> TAggregate
 ) :
-    EventStoreRepository<TAggregate>(coroutineContext) {
+    EventStoreRepository<TAggregate>() {
     private val client: KurrentDBClient =
         KurrentDBClient.create(eventStoreRepositoryConfig.eventStoreDBClientSettings())
     private val MAX_READ_PAGE_SIZE: Long = eventStoreRepositoryConfig.maxReadPageSize
@@ -173,7 +176,7 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
         val options = projectionHandler.subscriptionFilter?.subscribeToAllOptions(projectionHandler.position)
             ?: SubscribeToAllOptions.get().fromStart()
 
-        val subscription = client.subscribeToAll(projectionHandler, options).get()
+        val subscription = client.subscribeToAll(projectionHandler.getSubscriptionListener(), options).get()
         log.debug("subscribed to projection {}", subscription)
 
     }

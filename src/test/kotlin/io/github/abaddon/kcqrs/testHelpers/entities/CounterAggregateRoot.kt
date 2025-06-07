@@ -22,7 +22,7 @@ data class CounterAggregateRoot(
             val emptyAggregate = CounterAggregateRoot(id)
             return try {
                 check(initialValue >= 0 && initialValue < Int.MAX_VALUE) { "Value $initialValue not valid, it has to be >= 0 and < ${Int.MAX_VALUE}" }
-                emptyAggregate.raiseEvent(CounterInitialisedEvent.create(id, initialValue)) as CounterAggregateRoot
+                emptyAggregate.raiseEvent(CounterInitialisedEvent.create(id, initialValue,1)) as CounterAggregateRoot
             } catch (e: Exception) {
                 emptyAggregate.raiseEvent(DomainErrorEvent.create(id, e)) as CounterAggregateRoot
             }

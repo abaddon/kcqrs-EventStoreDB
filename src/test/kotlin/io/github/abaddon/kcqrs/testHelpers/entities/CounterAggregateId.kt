@@ -1,7 +1,7 @@
 package io.github.abaddon.kcqrs.testHelpers.entities
 
 import io.github.abaddon.kcqrs.core.IIdentity
-import java.util.*
+import  java.util.UUID
 
 data class CounterAggregateId(val value: UUID) : IIdentity {
 

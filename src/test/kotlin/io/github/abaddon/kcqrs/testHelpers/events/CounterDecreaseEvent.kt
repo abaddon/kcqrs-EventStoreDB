@@ -4,7 +4,7 @@ import io.github.abaddon.kcqrs.core.domain.messages.events.EventHeader
 import io.github.abaddon.kcqrs.core.domain.messages.events.IDomainEvent
 import io.github.abaddon.kcqrs.testHelpers.entities.CounterAggregateId
 import io.github.abaddon.kcqrs.testHelpers.entities.CounterAggregateRoot
-import java.util.*
+import  java.util.UUID
 
 data class CounterDecreaseEvent(
     override val messageId: UUID,
@@ -12,7 +12,7 @@ data class CounterDecreaseEvent(
     val value: Int
 ) : IDomainEvent {
     override val aggregateType: String = CounterAggregateRoot::class.java.simpleName
-    override val version: Int = 1
+    override val version: Long = 1
     override val header: EventHeader = EventHeader.create(aggregateType)
 
     companion object {

@@ -11,7 +11,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.util.*
+import  java.util.UUID
 import kotlin.test.assertEquals
 
 @ExperimentalCoroutinesApi
@@ -33,8 +33,7 @@ internal class EventStoreDBRepositoryTest : WithEventStoreDBContainer() {
         repositoryConfig = EventStoreDBRepositoryConfig(EventStoreDBConfig(connectionString), STREAM_NAME, 500, 500)
         repository = EventStoreDBRepository(
             repositoryConfig,
-            { CounterAggregateRoot(it as CounterAggregateId) },
-            testDispatcher
+            { CounterAggregateRoot(it as CounterAggregateId) }
         )
     }
 
