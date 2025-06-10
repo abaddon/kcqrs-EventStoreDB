@@ -19,7 +19,7 @@ val mapper = ObjectMapper().registerModule(
         .build()
 )
 
-fun Iterable<ResolvedEvent>.toDomainEvents(): Iterable<IDomainEvent> {
+fun Iterable<ResolvedEvent>.toDomainEvents(): List<IDomainEvent> {
     return this.mapNotNull { resolvedEvent -> resolvedEvent.event?.toDomainEvent() }
 }
 

@@ -12,14 +12,15 @@ import io.github.abaddon.kcqrs.eventstoredb.projection.EventStoreProjectionHandl
 import io.kurrent.dbclient.AppendToStreamOptions
 import io.kurrent.dbclient.KurrentDBClient
 import io.kurrent.dbclient.ReadStreamOptions
+import io.kurrent.dbclient.ResolvedEvent
 import io.kurrent.dbclient.StreamNotFoundException
 import io.kurrent.dbclient.StreamState
 import io.kurrent.dbclient.SubscribeToAllOptions
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.asFlow
 import java.security.InvalidParameterException
 import java.util.concurrent.CompletionException
+import java.util.concurrent.ExecutionException
 
 
 class EventStoreDBRepository<TAggregate : IAggregate>(
@@ -35,96 +36,80 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
 
     override fun emptyAggregate(aggregateId: IIdentity): TAggregate = funEmpty(aggregateId)
 
-    override suspend fun <TProjection : IProjection> subscribe(projectionHandler: IProjectionHandler<TProjection>) =
-        withContext(coroutineContext) {
-            when (projectionHandler) {
-                is EventStoreProjectionHandler -> subscribeEventStoreProjectionHandler(projectionHandler)
-                else -> log.warn("EventStoreProjectionHandler required, subscription failed")
-            }
+    override suspend fun <TProjection : IProjection> subscribe(projectionHandler: IProjectionHandler<TProjection>) {
+        when (projectionHandler) {
+            is EventStoreProjectionHandler -> subscribeEventStoreProjectionHandler(projectionHandler)
+            else -> log.warn("EventStoreProjectionHandler required, subscription failed")
         }
+    }
 
-    override suspend fun loadEvents(streamName: String, startFrom: Long): Result<Flow<IDomainEvent>> =
-        withContext(coroutineContext) {
-            var currentRevision: Long = startFrom
-            var totalEventsLoaded = 0
-            log.debug("loading events from stream {} with startRevision {}", streamName, startFrom)
+    override suspend fun loadEvents(streamName: String, startFrom: Long): Result<Flow<IDomainEvent>> = runCatching {
+        var currentRevision: Long = startFrom
+        var totalEventsLoaded = 0
+        log.debug("loading events from stream {} with startRevision {}", streamName, startFrom)
+        var hasMoreEvents = true
+        val domainEventFounds: MutableList<IDomainEvent> = mutableListOf()
+        while (hasMoreEvents) {
+            val options = ReadStreamOptions.get()
+                .forwards()
+                .fromRevision(currentRevision)
+                .maxCount(MAX_READ_PAGE_SIZE)
 
-            val result = runCatching {
-                flow<IDomainEvent> {
-                    var hasMoreEvents = true
-                    while (hasMoreEvents) {
-                        val options = ReadStreamOptions.get()
-                            .forwards()
-                            .fromRevision(currentRevision)
-                            .maxCount(MAX_READ_PAGE_SIZE)
-                        val result = client.readStream(streamName, options).get()
+            val resolvedEvent = readEventStore(options, streamName);
+            val domainEvents = resolvedEvent.toDomainEvents()
 
-                        val events = result.events
-                        log.debug(
-                            "events received: {}, firstStreamPosition: {}, lastStreamPosition {}",
-                            events.size,
-                            result.firstStreamPosition,
-                            result.lastStreamPosition
-                        )
+            if (domainEvents.isEmpty()) {
+                hasMoreEvents = false
+                log.debug("stream is empty")
+            } else {
+                // Emit each domain event individually
+                totalEventsLoaded += domainEvents.size
 
-                        if (events.isEmpty()) {
-                            hasMoreEvents = false
-                            log.debug("stream is empty")
-                        } else {
-                            val domainEvents = events.toDomainEvents()
+                val maxRevision = resolvedEvent.maxOfOrNull { event ->
+                    log.debug("event.originalEvent.revision, {}", event.originalEvent.revision)
+                    event.originalEvent.revision
+                }
+                log.debug("maxRevision is {}", maxRevision)
 
-                            // Emit each domain event individually
-                            domainEvents.forEach { domainEvent ->
-                                totalEventsLoaded += 1
-                                emit(domainEvent)
-                            }
-
-                            val maxRevision = events.maxOfOrNull { event ->
-                                log.debug("event.originalEvent.revision, {}", event.originalEvent.revision)
-                                event.originalEvent.revision
-                            }
-                            log.debug("maxRevision is {}", maxRevision)
-
-                            currentRevision += events.size
-                            if (currentRevision != maxRevision) {
-                                log.warn(
-                                    "currentRevision and maxRevision are different! {} and {}",
-                                    currentRevision,
-                                    maxRevision
-                                )
-                            }
-                        }
-                    }
+                currentRevision += resolvedEvent.size
+                if (currentRevision != maxRevision) {
+                    log.warn(
+                        "currentRevision and maxRevision are different! {} and {}",
+                        currentRevision,
+                        maxRevision
+                    )
                 }
             }
+            domainEventFounds.addAll(domainEvents)
+        }
+        domainEventFounds.asFlow()
+    }
 
+
+    private fun readEventStore(
+        options: ReadStreamOptions,
+        streamName: String
+    ): List<ResolvedEvent> {
+        try {
+            val result = client.readStream(streamName, options).get()
             log.debug(
-                "end loading events from stream {} with startRevision {} getting {} events",
-                streamName,
-                startFrom,
-                totalEventsLoaded
+                "events received: {}, firstStreamPosition: {}, lastStreamPosition {}",
+                result.events.size,
+                result.firstStreamPosition,
+                result.lastStreamPosition
             )
+            log.debug("stream contains {} events", result.events.size)
+            return result.events
+//            return result.events.toDomainEvents()
 
-            when {
-                result.isFailure -> {
-                    val ex = result.exceptionOrNull()!!
-                    log.debug("Error reading stream: {}", streamName, ex)
-                    when (ex.cause) {
-                        is StreamNotFoundException -> {
-                            log.debug("Stream not found: {}", streamName)
-                            Result.success(flow<IDomainEvent> {})
-                        }
-
-                        else -> {
-                            log.error("Error reading stream: {}", streamName, ex)
-                            result
-                        }
-                    }
-                }
-
-                else -> result
-            }
+        } catch (ex: ExecutionException) {
+            if (ex.cause is StreamNotFoundException) {
+                log.debug("Stream not found: {}", streamName)
+                return listOf<ResolvedEvent>()
+            } else
+                throw ex
         }
+    }
 
     override fun aggregateIdStreamName(aggregateId: IIdentity): String {
         check(streamName.isNotEmpty()) { throw InvalidParameterException("Cannot get streamName empty") }
@@ -136,7 +121,7 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
         uncommittedEvents: List<IDomainEvent>,
         header: Map<String, String>,
         currentVersion: Long
-    ): Result<Unit> = withContext(coroutineContext) {
+    ): Result<Unit> = runCatching {
         log.debug(
             "persisting uncommittedEvents {} with currentVersion {} on stream {}",
             uncommittedEvents,
@@ -159,16 +144,6 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
             log.error("Events not published on stream $streamName")
             Result.failure(ex)
         }
-
-//        writeResultFuture.whenComplete { writeResult, error ->
-//            if (error == null) {
-//                log.info("Events published on stream $streamName, nextExpectedRevision: ${writeResult.nextExpectedRevision}")
-//                Result.success(Unit)
-//            } else {
-//                log.error("Events not published on stream $streamName", error)
-//                Result.failure(error)
-//            }
-//        }.get()
     }
 
     private fun <TProjection : IProjection> subscribeEventStoreProjectionHandler(projectionHandler: EventStoreProjectionHandler<TProjection>) {
