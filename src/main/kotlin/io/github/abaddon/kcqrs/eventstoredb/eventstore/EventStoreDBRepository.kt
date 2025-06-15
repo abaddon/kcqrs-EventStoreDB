@@ -44,7 +44,7 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
     }
 
     override suspend fun loadEvents(streamName: String, startFrom: Long): Result<Flow<IDomainEvent>> = runCatching {
-        var currentRevision: Long = startFrom
+        var startFromRevision: Long = startFrom
         var totalEventsLoaded = 0
         log.debug("loading events from stream {} with startRevision {}", streamName, startFrom)
         var hasMoreEvents = true
@@ -52,33 +52,37 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
         while (hasMoreEvents) {
             val options = ReadStreamOptions.get()
                 .forwards()
-                .fromRevision(currentRevision)
+                .fromRevision(startFromRevision) // Start reading from the specified revision included
                 .maxCount(MAX_READ_PAGE_SIZE)
 
-            val resolvedEvent = readEventStore(options, streamName);
-            val domainEvents = resolvedEvent.toDomainEvents()
+            val eventsRead = readEventStore(options, streamName);
+            val domainEvents = eventsRead.toDomainEvents()
 
             if (domainEvents.isEmpty()) {
                 hasMoreEvents = false
                 log.debug("stream is empty")
             } else {
                 // Emit each domain event individually
-                totalEventsLoaded += domainEvents.size
+                totalEventsLoaded += domainEvents.size //1
 
-                val maxRevision = resolvedEvent.maxOfOrNull { event ->
-                    log.debug("event.originalEvent.revision, {}", event.originalEvent.revision)
+                val lastRevisionReceived = eventsRead.maxOfOrNull { event -> //0
+                    log.debug(" event {} with revision, {}", event.event.eventType, event.originalEvent.revision)
                     event.originalEvent.revision
                 }
-                log.debug("maxRevision is {}", maxRevision)
+                log.debug("last RevisionReceived is {}", lastRevisionReceived)
 
-                currentRevision += resolvedEvent.size
-                if (currentRevision != maxRevision) {
+                //0+100-1
+                val expectedLastRevisionReceived = startFromRevision + domainEvents.size - 1
+                if (expectedLastRevisionReceived != lastRevisionReceived) {
                     log.warn(
-                        "currentRevision and maxRevision are different! {} and {}",
-                        currentRevision,
-                        maxRevision
+                        "expectedLastRevisionReceived and lastRevisionReceived are different! {} and {}. Expected Revision calculated as {} + {} +1",
+                        expectedLastRevisionReceived,
+                        lastRevisionReceived,
+                        startFromRevision,
+                        domainEvents.size,
                     )
                 }
+                startFromRevision = (lastRevisionReceived ?: -1) + 1
             }
             domainEventFounds.addAll(domainEvents)
         }
