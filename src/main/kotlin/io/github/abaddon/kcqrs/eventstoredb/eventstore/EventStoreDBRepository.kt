@@ -137,7 +137,7 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
             if (currentVersion <= 0L)
                 AppendToStreamOptions.get().streamState(StreamState.noStream())
             else
-                AppendToStreamOptions.get().streamRevision(currentVersion - 1)
+                AppendToStreamOptions.get().streamRevision(currentVersion)
 
         // The append method has changed in EventStoreDB 4.x
         try {
