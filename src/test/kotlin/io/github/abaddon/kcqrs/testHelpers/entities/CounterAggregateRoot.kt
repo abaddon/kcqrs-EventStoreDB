@@ -53,7 +53,7 @@ data class CounterAggregateRoot(
     }
 
     private fun apply(event: CounterInitialisedEvent): CounterAggregateRoot {
-        return copy(id = event.aggregateId, version = version + 1, counter = event.value)
+        return copy(id = event.aggregateId, version = 0, counter = event.value)
     }
 
     private fun apply(event: CounterIncreasedEvent): CounterAggregateRoot {
