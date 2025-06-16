@@ -134,7 +134,7 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
         )
         val eventsToSave = uncommittedEvents.map { domainEvent -> domainEvent.toEventData(header) }
         val options: AppendToStreamOptions =
-            if (currentVersion <= 0L)
+            if (currentVersion < 0L)
                 AppendToStreamOptions.get().streamState(StreamState.noStream())
             else
                 AppendToStreamOptions.get().streamRevision(currentVersion)
@@ -144,7 +144,7 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
             client.appendToStream(streamName, options, eventsToSave.iterator()).get()
             log.debug("Events applied on stream $streamName")
             Result.success(Unit)
-        } catch (ex: CompletionException) {
+        } catch (ex: RuntimeException) {
             log.error("Events not published on stream $streamName")
             Result.failure(ex)
         }
