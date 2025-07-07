@@ -13,7 +13,7 @@ internal class EventStoreDBConfigTest {
         assertEquals(false, kurrentDBClientSettings.isTls)
         assertEquals(false, kurrentDBClientSettings.isTlsVerifyCert)
         assertEquals(1, kurrentDBClientSettings.hosts.size)
-        assertEquals("localhost", kurrentDBClientSettings.hosts[0].hostName)
+        assertEquals("127.0.0.1", kurrentDBClientSettings.hosts[0].host)
         assertEquals(2113, kurrentDBClientSettings.hosts[0].port)
     }
 }

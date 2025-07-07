@@ -6,20 +6,15 @@ import io.github.abaddon.kcqrs.core.IIdentity
 import io.github.abaddon.kcqrs.core.domain.messages.events.IDomainEvent
 import io.github.abaddon.kcqrs.core.helpers.LoggerFactory.log
 import io.github.abaddon.kcqrs.core.persistence.EventStoreRepository
-import io.github.abaddon.kcqrs.core.projections.IProjection
-import io.github.abaddon.kcqrs.core.projections.IProjectionHandler
-import io.github.abaddon.kcqrs.eventstoredb.projection.EventStoreProjectionHandler
 import io.kurrent.dbclient.AppendToStreamOptions
 import io.kurrent.dbclient.KurrentDBClient
 import io.kurrent.dbclient.ReadStreamOptions
 import io.kurrent.dbclient.ResolvedEvent
 import io.kurrent.dbclient.StreamNotFoundException
 import io.kurrent.dbclient.StreamState
-import io.kurrent.dbclient.SubscribeToAllOptions
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import java.security.InvalidParameterException
-import java.util.concurrent.CompletionException
 import java.util.concurrent.ExecutionException
 
 
@@ -35,13 +30,6 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
     private val streamName: String = eventStoreRepositoryConfig.streamName
 
     override fun emptyAggregate(aggregateId: IIdentity): TAggregate = funEmpty(aggregateId)
-
-    override suspend fun <TProjection : IProjection> subscribe(projectionHandler: IProjectionHandler<TProjection>) {
-        when (projectionHandler) {
-            is EventStoreProjectionHandler -> subscribeEventStoreProjectionHandler(projectionHandler)
-            else -> log.warn("EventStoreProjectionHandler required, subscription failed")
-        }
-    }
 
     override suspend fun loadEvents(streamName: String, startFrom: Long): Result<Flow<IDomainEvent>> = runCatching {
         var startFromRevision: Long = startFrom
@@ -148,16 +136,6 @@ class EventStoreDBRepository<TAggregate : IAggregate>(
             log.error("Events not published on stream $streamName")
             Result.failure(ex)
         }
-    }
-
-    private fun <TProjection : IProjection> subscribeEventStoreProjectionHandler(projectionHandler: EventStoreProjectionHandler<TProjection>) {
-        log.debug("subscribing to projection handler {}", projectionHandler)
-        val options = projectionHandler.subscriptionFilter?.subscribeToAllOptions(projectionHandler.position)
-            ?: SubscribeToAllOptions.get().fromStart()
-
-        val subscription = client.subscribeToAll(projectionHandler.getSubscriptionListener(), options).get()
-        log.debug("subscribed to projection {}", subscription)
-
     }
 
     override suspend fun publish(events: List<IDomainEvent>): Result<Unit> =
