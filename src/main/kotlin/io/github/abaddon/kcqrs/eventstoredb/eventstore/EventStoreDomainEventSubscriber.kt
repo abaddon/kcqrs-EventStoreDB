@@ -19,6 +19,35 @@ class EventStoreDomainEventSubscriber<TProjection : IProjection>(
 
     init {
         //Initialize the persistent subscription group
+        if (!isConsumerGroupExists()) {
+            createConsumerGroup()
+        }
+    }
+
+    override fun subscribe(projectionHandler: IProjectionHandler<TProjection>) {
+        when (projectionHandler) {
+            is EventStoreProjectionHandler -> subscribeEventStoreProjectionHandler(projectionHandler)
+            else -> log.warn("EventStoreProjectionHandler required, subscription failed")
+        }
+    }
+
+    private fun isConsumerGroupExists(): Boolean {
+        return try {
+            val consumerGroupName = eventStoreSubscriptionConfig.groupName;
+            val consumerGroupInfo = persistentSubscriptionsClient.getInfoToAll(consumerGroupName).get()
+            if (consumerGroupInfo.isEmpty) {
+                log.warn("Consumer group ${consumerGroupName} not exist")
+                return false
+            }
+            log.info("Consumer group ${consumerGroupName} exists with info: ${consumerGroupInfo.get()}")
+            return true
+        } catch (e: Exception) {
+            log.error("Error checking if consumer group exists", e)
+            false
+        }
+    }
+
+    private fun createConsumerGroup() {
         val streamNameRegex = eventStoreSubscriptionConfig.streamNames.joinToString("|", prefix = "^", postfix = "$")
         val subscriptionFilter = SubscriptionFilter.newBuilder()
             .withStreamNameRegularExpression(streamNameRegex) //^account|^savings
@@ -26,6 +55,7 @@ class EventStoreDomainEventSubscriber<TProjection : IProjection>(
         val options = CreatePersistentSubscriptionToAllOptions.get()
             .fromStart()
             .filter(subscriptionFilter)
+
         persistentSubscriptionsClient.createToAll(
             eventStoreSubscriptionConfig.groupName,
             options
@@ -38,14 +68,7 @@ class EventStoreDomainEventSubscriber<TProjection : IProjection>(
                 throw exception as Throwable
             }
             log.info("Persistent subscription group created {}", eventStoreSubscriptionConfig.groupName)
-        }
-    }
-
-    override fun subscribe(projectionHandler: IProjectionHandler<TProjection>) {
-        when (projectionHandler) {
-            is EventStoreProjectionHandler -> subscribeEventStoreProjectionHandler(projectionHandler)
-            else -> log.warn("EventStoreProjectionHandler required, subscription failed")
-        }
+        }.get()
     }
 
     private fun subscribeEventStoreProjectionHandler(projectionHandler: EventStoreProjectionHandler<TProjection>) {
