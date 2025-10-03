@@ -32,13 +32,13 @@ version = if(details.isCleanTag) lastTag else snapshotTag()
 
 repositories {
     mavenCentral()
-    mavenLocal()
     maven {
         url = uri("https://central.sonatype.com/repository/maven-snapshots/")
         mavenContent {
             snapshotsOnly()
         }
     }
+    mavenLocal()
 }
 
 dependencies {
