@@ -1,17 +1,17 @@
 # This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
 # For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
 
-name: Maven Release
+name: Maven Publish
 
 on:
   push:
-    branches: [ 'main', 'feature/**' ]
+    branches: [ 'main' ]
     tags:
-      - v[0-9]+.[0-9]+.[0-9]+
+      - '[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
-  release:
-    name: Release on Sonatype OSS
+  publish:
+    name: Publish to Maven Central
     runs-on: ubuntu-latest
 
     steps:
@@ -44,12 +44,36 @@ jobs:
           flags: unittests
           verbose: true
 
-      - name: Publish to Maven Central
+      - name: Publish Snapshot to Maven Central
+        if: startsWith(github.ref, 'refs/heads/')
+        run: ./gradlew publishToSonatype
+        env:
+          GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
+          GPG_SIGNING_PASSPHRASE: ${{ secrets.GPG_SIGNING_PASSPHRASE }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_TOKEN: ${{ secrets.SONATYPE_TOKEN }}
+
+      - name: Print Published Snapshot Version
+        if: startsWith(github.ref, 'refs/heads/')
+        run: |
+          VERSION=$(./gradlew printVersion -q)
+          echo "✅ Successfully published snapshot version: $VERSION"
+          echo "📦 Artifact: io.github.abaddon.kcqrs:kcqrs-EventStoreDB:$VERSION"
+          echo "🔗 Repository: https://central.sonatype.com/repository/maven-snapshots/"
+          echo ""
+          echo "## 📦 Snapshot Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** \`$VERSION\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Artifact:** \`io.github.abaddon.kcqrs:kcqrs-EventStoreDB:$VERSION\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Repository:** [Maven Central Snapshots](https://central.sonatype.com/repository/maven-snapshots/)" >> $GITHUB_STEP_SUMMARY
+
+      - name: Publish Release to Maven Central
+        if: startsWith(github.ref, 'refs/tags/')
         run: ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository
         env:
           GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
           GPG_SIGNING_PASSPHRASE: ${{ secrets.GPG_SIGNING_PASSPHRASE }}
-          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           SONATYPE_TOKEN: ${{ secrets.SONATYPE_TOKEN }}
