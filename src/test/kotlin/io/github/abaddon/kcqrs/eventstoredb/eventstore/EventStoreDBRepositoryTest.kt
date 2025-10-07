@@ -111,6 +111,110 @@ internal class EventStoreDBRepositoryTest : WithEventStoreDBContainer() {
 
         }
 
+    @Test
+    fun `Given non-existing aggregate when getById then returns empty aggregate`() = testScope.runTest {
+        // Given
+        val nonExistingId = CounterAggregateId()
+
+        // When
+        val result = repository.getById(nonExistingId)
+
+        // Then
+        result
+            .onSuccess { aggregateRoot ->
+                assertEquals(nonExistingId, aggregateRoot.id)
+                assertEquals(0, aggregateRoot.counter)
+                assertEquals(0L, aggregateRoot.version)
+            }
+            .onFailure {
+                assert(false) { "Should not fail for non-existing aggregate: ${it.message}" }
+            }
+    }
+
+    @Test
+    fun `Given aggregate id when aggregateIdStreamName called then returns correct stream name`() =
+        testScope.runTest {
+            // Given
+            val aggregateId = CounterAggregateId()
+
+            // When
+            val streamName = repository.aggregateIdStreamName(aggregateId)
+
+            // Then
+            assertEquals("$STREAM_NAME.${aggregateId.valueAsString()}", streamName)
+        }
+
+    @Test
+    fun `Given aggregate with multiple events when saved then all events are persisted`() =
+        testScope.runTest {
+            // Given
+            val counterAggregateId = CounterAggregateId()
+            val aggregate = CounterAggregateRoot.initialiseCounter(counterAggregateId, 10)
+            val aggregateWithMultipleEvents = aggregate
+                .increaseCounter(5)
+                .increaseCounter(3)
+                .decreaseCounter(2)
+
+            // When
+            repository.save(aggregateWithMultipleEvents, UUID.randomUUID())
+
+            // Then
+            val result = repository.getById(counterAggregateId)
+            result
+                .onSuccess { aggregateRoot ->
+                    assertEquals(counterAggregateId, aggregateRoot.id)
+                    assertEquals(16, aggregateRoot.counter) // 10 + 5 + 3 - 2
+                    assertEquals(3L, aggregateRoot.version)
+                }
+                .onFailure {
+                    assert(false) { "Failed to retrieve aggregate: ${it.message}" }
+                }
+        }
+
+    @Test
+    fun `Given aggregate when decrease counter below zero then error event is raised`() =
+        testScope.runTest {
+            // Given
+            val counterAggregateId = CounterAggregateId()
+            val aggregate = CounterAggregateRoot.initialiseCounter(counterAggregateId, 5)
+
+            // When
+            repository.save(aggregate, UUID.randomUUID())
+            val savedAggregate = repository.getById(counterAggregateId).getOrThrow()
+            val aggregateWithError = savedAggregate.decreaseCounter(10) // This should create error event
+
+            repository.save(aggregateWithError, UUID.randomUUID())
+
+            // Then
+            val result = repository.getById(counterAggregateId)
+            result
+                .onSuccess { aggregateRoot ->
+                    // Counter should remain 5 as the decrease operation failed
+                    assertEquals(5, aggregateRoot.counter)
+                    // Version should increase due to error event
+                    assertEquals(1L, aggregateRoot.version)
+                }
+                .onFailure {
+                    assert(false) { "Failed to retrieve aggregate: ${it.message}" }
+                }
+        }
+
+    @Test
+    fun `Given aggregate when emptyAggregate called then returns new aggregate with given id`() =
+        testScope.runTest {
+            // Given
+            val aggregateId = CounterAggregateId()
+
+            // When
+            val emptyAggregate = repository.emptyAggregate(aggregateId)
+
+            // Then
+            assertEquals(aggregateId, emptyAggregate.id)
+            assertEquals(0, emptyAggregate.counter)
+            assertEquals(0L, emptyAggregate.version)
+            assertEquals(0, emptyAggregate.uncommittedEvents.size)
+        }
+
 
 }
 
