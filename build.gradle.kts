@@ -22,7 +22,7 @@ plugins {
 val versionDetails: groovy.lang.Closure<com.palantir.gradle.gitversion.VersionDetails> by extra
 val details = versionDetails()
 
-val lastTag = details.lastTag.substring(1)
+val lastTag = details.lastTag
 val snapshotTag = {
     val list = lastTag.split(".")
     val third = (list.last().toInt() + 1).toString()
