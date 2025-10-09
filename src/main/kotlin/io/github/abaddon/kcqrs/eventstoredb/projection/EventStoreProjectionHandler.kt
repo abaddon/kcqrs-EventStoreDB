@@ -1,7 +1,7 @@
 package io.github.abaddon.kcqrs.eventstoredb.projection
 
 import io.github.abaddon.kcqrs.core.domain.messages.events.IDomainEvent
-import io.github.abaddon.kcqrs.core.helpers.LoggerFactory.log
+import io.github.abaddon.kcqrs.core.helpers.KcqrsLoggerFactory.log
 import io.github.abaddon.kcqrs.core.persistence.IProjectionRepository
 import io.github.abaddon.kcqrs.core.projections.IProjection
 import io.github.abaddon.kcqrs.core.projections.ProjectionHandler

@@ -4,7 +4,7 @@ package io.github.abaddon.kcqrs.eventstoredb.eventstore
 import io.github.abaddon.kcqrs.core.IAggregate
 import io.github.abaddon.kcqrs.core.IIdentity
 import io.github.abaddon.kcqrs.core.domain.messages.events.IDomainEvent
-import io.github.abaddon.kcqrs.core.helpers.LoggerFactory.log
+import io.github.abaddon.kcqrs.core.helpers.KcqrsLoggerFactory.log
 import io.github.abaddon.kcqrs.core.persistence.EventStoreRepository
 import io.kurrent.dbclient.AppendToStreamOptions
 import io.kurrent.dbclient.KurrentDBClient
