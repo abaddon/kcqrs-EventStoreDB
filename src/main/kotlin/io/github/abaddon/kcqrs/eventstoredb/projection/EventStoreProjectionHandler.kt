@@ -6,12 +6,7 @@ import io.github.abaddon.kcqrs.core.persistence.IProjectionRepository
 import io.github.abaddon.kcqrs.core.projections.IProjection
 import io.github.abaddon.kcqrs.core.projections.ProjectionHandler
 import io.github.abaddon.kcqrs.eventstoredb.eventstore.toDomainEvent
-import io.kurrent.dbclient.NackAction
-import io.kurrent.dbclient.PersistentSubscription
-import io.kurrent.dbclient.PersistentSubscriptionListener
-import io.kurrent.dbclient.ResolvedEvent
-import io.kurrent.dbclient.Subscription
-import io.kurrent.dbclient.SubscriptionListener
+import io.kurrent.dbclient.*
 import kotlinx.coroutines.launch
 
 
@@ -81,43 +76,5 @@ abstract class EventStoreProjectionHandler<TProjection : IProjection>(
         }
     }
 
-
-//    override suspend fun onEvent(event: IDomainEvent): Result<Unit> = withContext(coroutineContext) {
-//        onEvents(flowOf(event))
-//    }
-//
-//    override suspend fun onEvents(events: List<IDomainEvent>): Result<Unit> = withContext(coroutineContext) {
-//        onEvents(events.asFlow())
-//    }
-//
-//    override suspend fun onEvents(events: Flow<IDomainEvent>): Result<Unit> =
-//        withContext(coroutineContext) {
-//            repository.getByKey(projectionKey)
-//                .flatMap {
-//                    updateProjection(it, events)
-//                }.flatMap {
-//                    saveProjection(it)
-//                }
-//        }
-//
-//    @Suppress("UNCHECKED_CAST")
-//    private suspend fun updateProjection(
-//        currentProjection: TProjection,
-//        events: Flow<IDomainEvent>
-//    ): Result<TProjection> = withContext(coroutineContext) {
-//        runCatching {
-//            events.fold(currentProjection) { currentProjection, event ->
-//                currentProjection.applyEvent(event) as TProjection
-//            }
-//        }
-//    }
-//
-//    private suspend fun saveProjection(
-//        projection: TProjection
-//    ): Result<Unit> = withContext(coroutineContext) {
-//        repository.save(projection)
-//    }
-
-    // In EventStoreDB 4.x, non-nullability is enforced in the method signature
     private fun transformToDomainEvent(event: ResolvedEvent): IDomainEvent? = event.event?.toDomainEvent()
 }

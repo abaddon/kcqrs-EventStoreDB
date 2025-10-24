@@ -29,7 +29,7 @@ Implements `EventStoreRepository<TAggregate>` from kcqrs-core for event persiste
 **Important Methods:**
 - `loadEvents()`: Loads events from a stream with pagination, returns `Flow<IDomainEvent>`
 - `persist()`: Saves uncommitted events with optimistic concurrency check
-- `aggregateIdStreamName()`: Generates stream name from aggregate ID
+- `aggregateIdStreamName()`: Generates stream name
 
 ### 2. EventStoreDomainEventSubscriber (src/main/kotlin/io/github/abaddon/kcqrs/eventstoredb/eventstore/EventStoreDomainEventSubscriber.kt:14)
 Implements `IDomainEventSubscriber<TProjection>` from kcqrs-core for consuming events via persistent subscriptions.

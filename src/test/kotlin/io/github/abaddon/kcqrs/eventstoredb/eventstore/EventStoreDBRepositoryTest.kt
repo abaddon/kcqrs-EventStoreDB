@@ -17,7 +17,7 @@ import kotlin.test.assertEquals
 @ExperimentalCoroutinesApi
 internal class EventStoreDBRepositoryTest : WithEventStoreDBContainer() {
     companion object {
-        private const val STREAM_NAME = "CounterAggregateRoot"
+        private const val STREAM_NAME_PREFIX = "CounterAggregateRoot"
     }
 
     private val testDispatcher = UnconfinedTestDispatcher()
@@ -29,8 +29,10 @@ internal class EventStoreDBRepositoryTest : WithEventStoreDBContainer() {
 
     @BeforeEach
     fun setUp() {
+        // Use a unique stream name for each test to prevent event pollution
+        val uniqueStreamName = "$STREAM_NAME_PREFIX-${UUID.randomUUID()}"
         val connectionString = "kurrentdb://127.0.0.1:${container.getMappedPort(2113)}?tls=false&tlsVerifyCert=false"
-        repositoryConfig = EventStoreDBRepositoryConfig(EventStoreDBConfig(connectionString), STREAM_NAME, 500, 500)
+        repositoryConfig = EventStoreDBRepositoryConfig(EventStoreDBConfig(connectionString), uniqueStreamName, 500, 500)
         repository = EventStoreDBRepository(
             repositoryConfig,
             { CounterAggregateRoot(it as CounterAggregateId) }
@@ -141,7 +143,8 @@ internal class EventStoreDBRepositoryTest : WithEventStoreDBContainer() {
             val streamName = repository.aggregateIdStreamName(aggregateId)
 
             // Then
-            assertEquals("$STREAM_NAME.${aggregateId.valueAsString()}", streamName)
+            // Stream name should not contain the aggregate ID
+            assertEquals(repositoryConfig.streamName, streamName)
         }
 
     @Test
